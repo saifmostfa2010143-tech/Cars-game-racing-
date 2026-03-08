@@ -3,346 +3,320 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>لعبة سباق سيارات متكاملة بـ HTML5</title>
+    <title>لعبة سيارات أفقية فيزيائية - المستوى الاحترافي</title>
     <style>
         body, html {
             margin: 0; padding: 0; width: 100%; height: 100%;
-            overflow: hidden; background-color: #2d5a27; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            touch-action: none; /* منع تمرير الشاشة في الهواتف */
+            overflow: hidden; background-color: #0a1a3a;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            touch-action: none; user-select: none; -webkit-user-select: none;
         }
         canvas { display: block; }
-
-        /* أزرار التحكم للهواتف */
-        #mobile-controls {
-            position: absolute; bottom: 30px; width: 100%;
-            display: flex; justify-content: space-between; padding: 0 30px;
-            box-sizing: border-box; pointer-events: none;
+        
+        /* واجهة المستخدم والتصميم */
+        #ui {
+            position: absolute; top: 20px; left: 20px; right: 20px;
+            display: flex; justify-content: space-between; pointer-events: none;
         }
-        .control-group { display: flex; gap: 15px; pointer-events: auto; }
+        .panel {
+            background: rgba(0, 0, 0, 0.6); padding: 10px 20px;
+            border-radius: 10px; color: white; border: 1px solid rgba(255,255,255,0.2);
+            font-size: 24px; font-weight: bold; backdrop-filter: blur(5px);
+        }
+        #speedometer { color: #00ffcc; }
+        #distance { color: #ffcc00; }
+
+        /* أزرار الهاتف الاحترافية */
+        #controls {
+            position: absolute; bottom: 30px; left: 30px; right: 30px;
+            display: flex; justify-content: space-between; z-index: 10;
+        }
         .btn {
-            width: 70px; height: 70px; background: rgba(0, 0, 0, 0.4);
-            border: 2px solid rgba(255, 255, 255, 0.6); border-radius: 50%;
-            color: white; font-size: 28px; font-weight: bold;
+            width: 100px; height: 100px; border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1); border: 3px solid rgba(255, 255, 255, 0.4);
+            color: white; font-size: 20px; font-weight: bold;
             display: flex; align-items: center; justify-content: center;
-            user-select: none; backdrop-filter: blur(5px);
+            backdrop-filter: blur(8px); cursor: pointer; text-align: center; line-height: 1.2;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3); transition: transform 0.1s;
         }
-        .btn:active { background: rgba(255, 255, 255, 0.5); transform: scale(0.95); }
+        .btn:active { background: rgba(255, 255, 255, 0.3); transform: scale(0.9); border-color: #fff; }
 
-        /* إخفاء الأزرار في شاشات الكمبيوتر */
-        @media (min-width: 800px) { #mobile-controls { display: none; } }
+        @media (min-width: 800px) { #controls { display: none; } }
     </style>
 </head>
 <body>
 
+<div id="ui">
+    <div class="panel" id="distance">المسافة: 0m</div>
+    <div class="panel" id="speedometer">0 km/h</div>
+</div>
+
 <canvas id="gameCanvas"></canvas>
 
-<!-- أزرار التحكم -->
-<div id="mobile-controls">
-    <div class="control-group">
-        <div class="btn" id="btnLeft">←</div>
-        <div class="btn" id="btnRight">→</div>
-    </div>
-    <div class="control-group">
-        <div class="btn" id="btnBrake">B</div>
-        <div class="btn" id="btnGas">A</div>
-    </div>
+<div id="controls">
+    <div class="btn" id="btnBrake">فرامل<br>رجوع</div>
+    <div class="btn" id="btnGas">بنزين<br>أمام</div>
 </div>
 
 <script>
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
-
+    
     function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
-    window.addEventListener('resize', resize);
-    resize();
+    window.addEventListener('resize', resize); resize();
 
-    // إعدادات المسار (مضمار دائري ضخم)
-    const TRACK_INNER = 1100; // الحدود الداخلية
-    const TRACK_OUTER = 1900; // الحدود الخارجية
-    
-    // حالة اللعبة
-    let lap = 0;
-    let level = 1;
-    let startTime = Date.now();
-    let hasReachedBottom = false; // لمنع الغش (يجب إكمال الدورة كاملة)
-    
-    // قوائم العناصر
-    let aiCars = [];
-    let obstacles = [];
-
-    // لاعب
-    const car = {
-        x: 0, y: -1500, // يبدأ من أعلى المضمار
-        width: 50, height: 25, // (الطول، العرض)
-        speed: 0, acceleration: 0.15, maxSpeed: 22,
-        friction: 0.05, angle: 0, turnSpeed: 0.05, color: '#ff3333'
+    // 1. إعدادات الفيزياء المتطورة
+    const PHYSICS = {
+        gravity: 0.25,      // الجاذبية
+        friction: 0.995,    // الاحتكاك الكلي
+        enginePower: 0.6,   // قوة المحرك
+        springK: 0.15,      // صلابة المساعدين (Suspension)
+        damping: 0.1,       // ممتص الصدمات
+        maxSpeed: 25
     };
 
-    const keys = { ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false };
+    // 2. حالة السيارة
+    let car = {
+        x: 400, y: 100, vx: 0, vy: 0, angle: 0, angularVelocity: 0,
+        width: 80, height: 20, wheelRadius: 18, wheelAngle: 0,
+        mass: 1.0, inertia: 1500, // القصور الذاتي (لمنع الانقلاب بسهولة)
+        rearOffset: -35, frontOffset: 35
+    };
 
-    // التحكم بالكمبيوتر والهاتف
-    window.addEventListener('keydown', (e) => { if (keys.hasOwnProperty(e.code)) keys[e.code] = true; });
-    window.addEventListener('keyup', (e) => { if (keys.hasOwnProperty(e.code)) keys[e.code] = false; });
+    // 3. التضاريس اللانهائية (Procedural Terrain)
+    let terrain = [{x: 0, y: 400}];
+    const SEGMENT_WIDTH = 40;
+    
+    function getTerrainHeight(x) {
+        // توليد أراضي جديدة كلما تقدم اللاعب
+        while (terrain[terrain.length - 1].x < x + canvas.width * 2) {
+            let last = terrain[terrain.length - 1];
+            let nextX = last.x + SEGMENT_WIDTH;
+            // معادلات رياضية (Sine Waves) لتوليد تلال عشوائية ناعمة
+            let noise = Math.sin(nextX * 0.003) * 150 + Math.sin(nextX * 0.01) * 80 + Math.sin(nextX * 0.05) * 20;
+            terrain.push({ x: nextX, y: 450 + noise });
+        }
+        
+        if (x < 0) return terrain[0].y;
+        
+        let startIdx = Math.max(0, Math.floor(x / SEGMENT_WIDTH));
+        if (startIdx >= terrain.length - 1) return terrain[terrain.length - 1].y;
+        
+        let t1 = terrain[startIdx], t2 = terrain[startIdx + 1];
+        let t = (x - t1.x) / SEGMENT_WIDTH;
+        return t1.y + (t2.y - t1.y) * t; // Interpolation (تنعيم التضاريس)
+    }
 
-    function setupTouch(id, key) {
+    // 4. نظام الجزيئات (Particles) للغبار والدخان
+    let particles = [];
+    function spawnParticle(x, y, isExhaust) {
+        if (Math.random() > 0.4) return;
+        particles.push({
+            x: x, y: y,
+            vx: isExhaust ? (-Math.cos(car.angle)*2 + (Math.random()-0.5)) : (-car.vx * 0.2 + (Math.random()-0.5)*2),
+            vy: isExhaust ? (-Math.sin(car.angle)*2 + (Math.random()-0.5)) : (-2 + Math.random()),
+            life: isExhaust ? 20 : 40,
+            maxLife: isExhaust ? 20 : 40,
+            color: isExhaust ? 'rgba(150, 150, 150, ' : 'rgba(139, 69, 19, ' // رمادي للعادم، بني للتراب
+        });
+    }
+
+    // 5. التحكم والكاميرا
+    const keys = { gas: false, brake: false };
+    let camera = { x: 0, y: 0 };
+
+    window.addEventListener('keydown', (e) => { 
+        if(e.code === 'ArrowRight' || e.code === 'ArrowUp') keys.gas = true;
+        if(e.code === 'ArrowLeft' || e.code === 'ArrowDown') keys.brake = true;
+    });
+    window.addEventListener('keyup', (e) => { 
+        if(e.code === 'ArrowRight' || e.code === 'ArrowUp') keys.gas = false;
+        if(e.code === 'ArrowLeft' || e.code === 'ArrowDown') keys.brake = false;
+    });
+
+    const setupBtn = (id, key) => {
         const btn = document.getElementById(id);
         btn.addEventListener('touchstart', (e) => { e.preventDefault(); keys[key] = true; });
         btn.addEventListener('touchend', (e) => { e.preventDefault(); keys[key] = false; });
-    }
-    setupTouch('btnGas', 'ArrowUp'); setupTouch('btnBrake', 'ArrowDown');
-    setupTouch('btnLeft', 'ArrowLeft'); setupTouch('btnRight', 'ArrowRight');
+        btn.addEventListener('mousedown', (e) => { e.preventDefault(); keys[key] = true; });
+        btn.addEventListener('mouseup', (e) => { e.preventDefault(); keys[key] = false; });
+    };
+    setupBtn('btnGas', 'gas'); setupBtn('btnBrake', 'brake');
 
-    // وظيفة تهيئة المستوى وإنشاء السيارات والعوائق
-    function initLevel() {
-        aiCars = [];
-        obstacles = [];
-        
-        // إضافة سيارات منافسة
-        let aiCount = level * 3 + 2;
-        for(let i=0; i < aiCount; i++) {
-            aiCars.push({
-                trackAngle: Math.random() * Math.PI * 2, // موقع عشوائي حول المضمار
-                radius: TRACK_INNER + 100 + Math.random() * (TRACK_OUTER - TRACK_INNER - 200),
-                speed: 6 + Math.random() * (3 + level), // السرعة تزيد مع المستوى
-                color: ['#3344ff', '#ffaa00', '#ee22ee', '#ffffff', '#222222'][Math.floor(Math.random()*5)],
-                width: 50, height: 25
-            });
-        }
-
-        // إضافة عوائق (صخور وإطارات)
-        let obsCount = level * 4;
-        for(let i=0; i < obsCount; i++) {
-            // لا تضع عوائق بالقرب من خط البداية (لتجنب الاصطدام الفوري)
-            let obsAngle = (Math.PI / 4) + Math.random() * (Math.PI * 1.5);
-            obstacles.push({
-                angle: obsAngle,
-                radius: TRACK_INNER + 50 + Math.random() * (TRACK_OUTER - TRACK_INNER - 100),
-                size: 20 + Math.random() * 10
-            });
-        }
-    }
-    initLevel();
-
+    // 6. المحرك الفيزيائي (تحديث كل إطار)
     function update() {
-        let prevX = car.x;
+        car.vy += PHYSICS.gravity; // تطبيق الجاذبية
 
-        // 1. التسارع والفرامل
-        if (keys.ArrowUp) car.speed += car.acceleration;
-        if (keys.ArrowDown) car.speed -= car.acceleration;
-
-        // 2. التوجيه (يجب أن تتحرك لتتمكن من الانعطاف)
-        if (Math.abs(car.speed) > 0.1) {
-            const dir = car.speed > 0 ? 1 : -1;
-            if (keys.ArrowLeft) car.angle -= car.turnSpeed * dir;
-            if (keys.ArrowRight) car.angle += car.turnSpeed * dir;
-        }
-
-        // 3. فيزياء الأرضية (خروج عن المسار = بطء شديد)
-        let distFromCenter = Math.hypot(car.x, car.y);
-        let currentFriction = car.friction;
-        let currentMaxSpeed = car.maxSpeed;
-
-        if (distFromCenter < TRACK_INNER || distFromCenter > TRACK_OUTER) {
-            currentFriction = 0.2; // احتكاك العشب
-            currentMaxSpeed = 7;   // سرعة قصوى منخفضة جداً على العشب
-        }
-
-        // الاحتكاك الطبيعي
-        if (!keys.ArrowUp && !keys.ArrowDown) {
-            if (car.speed > 0) car.speed = Math.max(0, car.speed - currentFriction);
-            else if (car.speed < 0) car.speed = Math.min(0, car.speed + currentFriction);
-        }
-
-        // تطبيق السرعة القصوى
-        if (car.speed > currentMaxSpeed) car.speed -= 0.2; // تباطؤ تدريجي إذا خرج للعشب
-        if (car.speed < -currentMaxSpeed/2) car.speed = -currentMaxSpeed/2;
-
-        // تحديث إحداثيات اللاعب
-        car.x += Math.cos(car.angle) * car.speed;
-        car.y += Math.sin(car.angle) * car.speed;
-
-        // 4. نظام اللفات والمستويات (Lap & Level UP)
-        if (car.y > 0) hasReachedBottom = true; // اللاعب وصل لنصف المسار
-        // إذا عبر اللاعب من اليسار لليمين في أعلى المسار (خط النهاية)
-        if (hasReachedBottom && car.y < -1000 && prevX < 0 && car.x >= 0) {
-            lap++;
-            level++;
-            hasReachedBottom = false;
-            initLevel(); // إعادة ضبط العوائق والسيارات بشكل أصعب
-        }
-
-        // 5. تحديث السيارات المنافسة (AI) واختبار الاصطدام
-        aiCars.forEach(ai => {
-            ai.trackAngle += ai.speed / ai.radius; // التحرك في المسار الدائري
-            ai.x = Math.cos(ai.trackAngle) * ai.radius;
-            ai.y = Math.sin(ai.trackAngle) * ai.radius;
-            ai.angle = ai.trackAngle + Math.PI/2; // توجيه وجه السيارة للأمام
-
-            // اصطدام اللاعب بالسيارات المنافسة
-            if (Math.hypot(car.x - ai.x, car.y - ai.y) < (car.width/2 + ai.width/2 - 5)) {
-                car.speed *= 0.5; // فقدان السرعة
-                car.x -= Math.cos(car.angle) * 5; // ارتداد بسيط
-                car.y -= Math.sin(car.angle) * 5;
-            }
-        });
-
-        // 6. اصطدام اللاعب بالعوائق
-        obstacles.forEach(obs => {
-            let ox = Math.cos(obs.angle) * obs.radius;
-            let oy = Math.sin(obs.angle) * obs.radius;
-            if (Math.hypot(car.x - ox, car.y - oy) < (car.width/2 + obs.size - 5)) {
-                car.speed *= 0.3; // فقدان هائل للسرعة
-            }
-        });
-    }
-
-    // دالة رسم أي سيارة
-    function drawCar(x, y, angle, color, w, h, isGas=false, isBrake=false) {
-        ctx.save();
-        ctx.translate(x, y);
-        ctx.rotate(angle);
-
-        // الظل
-        ctx.fillStyle = 'rgba(0,0,0,0.5)';
-        ctx.fillRect(-w/2 + 5, -h/2 + 5, w, h);
-
-        // الهيكل الرئيسي
-        ctx.fillStyle = color;
-        ctx.beginPath();
-        ctx.roundRect ? ctx.roundRect(-w/2, -h/2, w, h, 6) : ctx.fillRect(-w/2, -h/2, w, h);
-        ctx.fill();
-
-        // الزجاج الأمامي
-        ctx.fillStyle = '#111';
-        ctx.fillRect(w/2 - 16, -h/2 + 3, 10, h - 6);
+        let cos = Math.cos(car.angle), sin = Math.sin(car.angle);
         
-        // الزجاج الخلفي
-        ctx.fillRect(-w/2 + 6, -h/2 + 4, 8, h - 8);
+        // حساب إحداثيات الإطارات (خلفي وأمامي)
+        let rwX = car.x + car.rearOffset * cos - 15 * sin;
+        let rwY = car.y + car.rearOffset * sin + 15 * cos;
+        let fwX = car.x + car.frontOffset * cos - 15 * sin;
+        let fwY = car.y + car.frontOffset * sin + 15 * cos;
 
-        // المصابيح الأمامية
-        if (isGas) {
-            ctx.fillStyle = 'rgba(255, 255, 180, 0.25)';
-            ctx.beginPath();
-            ctx.moveTo(w/2, -h/2 + 2);
-            ctx.lineTo(w*4, -h*3);
-            ctx.lineTo(w*4, h*3);
-            ctx.lineTo(w/2, h/2 - 2);
-            ctx.fill();
+        let terrRearY = getTerrainHeight(rwX);
+        let terrFrontY = getTerrainHeight(fwX);
+        let onGround = false;
+
+        // دالة تطبيق فيزياء المساعدين والاصطدام بالأرض
+        function applyWheelPhysics(wx, wy, ty, offsetX) {
+            let overlap = (wy + car.wheelRadius) - ty; // مقدار اختراق العجلة للأرض
+            if (overlap > 0) {
+                onGround = true;
+                
+                let ptVy = car.vy + car.angularVelocity * (wx - car.x); // سرعة النزول الدقيقة للعجلة
+                
+                // قوة المساعدين (Spring Force + Damping)
+                let forceY = overlap * PHYSICS.springK + ptVy * PHYSICS.damping;
+                if (forceY < 0) forceY = 0; // الأرض لا تسحب السيارة لأسفل
+                
+                car.vy -= forceY / car.mass; // رفع السيارة
+                car.angularVelocity -= ((wx - car.x) * forceY) / car.inertia; // دوران السيارة بسبب الاصطدام
+                
+                // قوة المحرك والفرامل (Traction)
+                if (keys.gas) {
+                    car.vx += cos * PHYSICS.enginePower; car.vy += sin * PHYSICS.enginePower;
+                    spawnParticle(wx, ty, false); // إخراج تراب
+                }
+                if (keys.brake) {
+                    car.vx -= cos * PHYSICS.enginePower; car.vy -= sin * PHYSICS.enginePower;
+                    spawnParticle(wx, ty, false); // إخراج تراب
+                }
+            }
         }
 
-        // المصابيح الخلفية
-        ctx.fillStyle = isBrake ? '#ff0000' : '#440000';
-        ctx.fillRect(-w/2, -h/2 + 2, 4, 6);
-        ctx.fillRect(-w/2, h/2 - 8, 4, 6);
+        applyWheelPhysics(rwX, rwY, terrRearY, car.rearOffset);
+        applyWheelPhysics(fwX, fwY, terrFrontY, car.frontOffset);
 
-        ctx.restore();
+        // الاحتكاك بالهواء والأرض
+        car.vx *= PHYSICS.friction;
+        car.vy *= PHYSICS.friction;
+        car.angularVelocity *= 0.95;
+
+        // التحكم في دوران السيارة أثناء الطيران في الهواء (مثل Hill Climb)
+        if (!onGround) {
+            if (keys.gas) car.angularVelocity += 0.004;
+            if (keys.brake) car.angularVelocity -= 0.004;
+        }
+
+        // تحديد السرعة القصوى
+        if(car.vx > PHYSICS.maxSpeed) car.vx = PHYSICS.maxSpeed;
+        if(car.vx < -PHYSICS.maxSpeed) car.vx = -PHYSICS.maxSpeed;
+
+        // تحديث الإحداثيات
+        car.x += car.vx;
+        car.y += car.vy;
+        car.angle += car.angularVelocity;
+        car.wheelAngle += car.vx / car.wheelRadius; // دوران الإطارات بصرياً
+
+        if (keys.gas) spawnParticle(car.x - 45*cos, car.y - 45*sin, true); // دخان عادم
+
+        // الكاميرا تتبع السيارة بسلاسة وبدون أي دوران
+        camera.x += (car.x - canvas.width * 0.3 - camera.x) * 0.1;
+        camera.y += (car.y - canvas.height * 0.6 - camera.y) * 0.1;
+
+        // تحديث الواجهة UI
+        document.getElementById('speedometer').innerText = Math.abs(Math.floor(car.vx * 3.6)) + ' km/h';
+        document.getElementById('distance').innerText = 'المسافة: ' + Math.max(0, Math.floor(car.x / 50)) + 'm';
+        
+        // تحديث الجزيئات
+        particles.forEach(p => { p.x += p.vx; p.y += p.vy; p.life--; });
+        particles = particles.filter(p => p.life > 0);
     }
 
+    // 7. الرسم الاحترافي للمشهد
     function draw() {
-        // خلفية العشب الأخضر
-        ctx.fillStyle = '#2d5a27';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        // رسم السماء والخلفية المتحركة (Parallax)
+        let sky = ctx.createLinearGradient(0, 0, 0, canvas.height);
+        sky.addColorStop(0, '#0a1a3a'); sky.addColorStop(1, '#ff7b54');
+        ctx.fillStyle = sky; ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // شمس
+        ctx.fillStyle = '#ffcc00'; ctx.beginPath(); ctx.arc(canvas.width * 0.8, canvas.height * 0.4, 60, 0, Math.PI*2); ctx.fill();
 
         ctx.save();
-        // الكاميرا تتبع اللاعب
-        ctx.translate(canvas.width/2 - car.x, canvas.height/2 - car.y);
+        ctx.translate(-camera.x, -camera.y); // تحريك الكاميرا (بدون دوران)
 
-        // رسم المضمار الأسفلتي
+        // رسم الجبال الخلفية (تتحرك ببطء)
+        ctx.fillStyle = '#2c3e50';
+        ctx.beginPath(); ctx.moveTo(camera.x, camera.y + canvas.height + 500);
+        for(let i = camera.x - 200; i < camera.x + canvas.width + 200; i+=100) {
+            ctx.lineTo(i, Math.sin(i * 0.002) * 200 + 400);
+        }
+        ctx.lineTo(camera.x + canvas.width + 200, camera.y + canvas.height + 500); ctx.fill();
+
+        // رسم التضاريس الأرضية (التي نتفاعل معها)
+        let startIdx = Math.max(0, Math.floor((camera.x - 200) / SEGMENT_WIDTH));
+        let endIdx = Math.min(terrain.length - 1, startIdx + Math.ceil(canvas.width / SEGMENT_WIDTH) + 10);
+
         ctx.beginPath();
-        ctx.arc(0, 0, TRACK_OUTER, 0, Math.PI * 2);
-        ctx.fillStyle = '#444';
-        ctx.fill();
-
-        // رسم الفراغ الداخلي للمضمار (عشب)
-        ctx.beginPath();
-        ctx.arc(0, 0, TRACK_INNER, 0, Math.PI * 2);
-        ctx.fillStyle = '#2d5a27';
-        ctx.fill();
-
-        // رسم حواف المضمار (أبيض من الخارج، أحمر وأبيض من الداخل)
-        ctx.lineWidth = 10;
-        ctx.strokeStyle = '#ffffff';
-        ctx.beginPath(); ctx.arc(0, 0, TRACK_OUTER, 0, Math.PI * 2); ctx.stroke();
+        ctx.moveTo(terrain[startIdx].x, camera.y + canvas.height + 500);
+        for (let i = startIdx; i <= endIdx; i++) ctx.lineTo(terrain[i].x, terrain[i].y);
+        ctx.lineTo(terrain[endIdx].x, camera.y + canvas.height + 500);
+        ctx.closePath();
         
-        ctx.strokeStyle = '#ff3333';
-        ctx.beginPath(); ctx.arc(0, 0, TRACK_INNER, 0, Math.PI * 2); ctx.stroke();
-
-        // رسم خط البداية / النهاية
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 25;
-        ctx.setLineDash([25, 25]);
-        ctx.beginPath();
-        ctx.moveTo(0, -TRACK_INNER);
-        ctx.lineTo(0, -TRACK_OUTER);
+        ctx.fillStyle = '#5A3A22'; // لون التراب
+        ctx.fill();
+        ctx.lineWidth = 15; ctx.strokeStyle = '#4CAF50'; // لون العشب
         ctx.stroke();
-        ctx.setLineDash([]); // إعادة الضبط
 
-        // رسم العوائق
-        obstacles.forEach(obs => {
-            let ox = Math.cos(obs.angle) * obs.radius;
-            let oy = Math.sin(obs.angle) * obs.radius;
-            
-            ctx.fillStyle = '#222';
-            ctx.beginPath();
-            ctx.arc(ox, oy, obs.size, 0, Math.PI*2);
-            ctx.fill();
-            
-            ctx.fillStyle = '#666';
-            ctx.beginPath();
-            ctx.arc(ox, oy, obs.size * 0.5, 0, Math.PI*2);
-            ctx.fill();
+        // رسم الجزيئات (الغبار والدخان)
+        particles.forEach(p => {
+            ctx.fillStyle = p.color + (p.life / p.maxLife) + ')';
+            ctx.beginPath(); ctx.arc(p.x, p.y, (p.maxLife - p.life) * 0.5 + 2, 0, Math.PI*2); ctx.fill();
         });
 
-        // رسم السيارات المنافسة
-        aiCars.forEach(ai => drawCar(ai.x, ai.y, ai.angle, ai.color, ai.width, ai.height));
+        // رسم السيارة
+        ctx.save();
+        ctx.translate(car.x, car.y);
+        ctx.rotate(car.angle);
 
-        // رسم سيارة اللاعب
-        drawCar(car.x, car.y, car.angle, car.color, car.width, car.height, keys.ArrowUp, keys.ArrowDown);
+        // المساعدين (Suspension Lines)
+        ctx.strokeStyle = '#888'; ctx.lineWidth = 4;
+        ctx.beginPath(); ctx.moveTo(car.rearOffset, 0); ctx.lineTo(car.rearOffset, 15); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(car.frontOffset, 0); ctx.lineTo(car.frontOffset, 15); ctx.stroke();
+
+        // هيكل السيارة
+        ctx.fillStyle = '#ff3300';
+        ctx.beginPath(); 
+        ctx.roundRect ? ctx.roundRect(-45, -10, 90, 20, 5) : ctx.fillRect(-45, -10, 90, 20); // الشاسيه
+        ctx.roundRect ? ctx.roundRect(-25, -35, 45, 30, 10) : ctx.fillRect(-25, -35, 45, 30); // الكابينة
+        ctx.fill();
+
+        // نافذة
+        ctx.fillStyle = '#bbddff';
+        ctx.fillRect(-10, -30, 25, 15);
+
+        // إضاءة أمامية
+        if(keys.gas) {
+            ctx.fillStyle = 'rgba(255, 255, 150, 0.2)';
+            ctx.beginPath(); ctx.moveTo(45, -5); ctx.lineTo(400, -80); ctx.lineTo(400, 150); ctx.fill();
+        }
 
         ctx.restore();
 
-        // رسم واجهة المستخدم (UI)
-        drawUI();
+        // دالة رسم الإطارات
+        function drawWheel(x, y) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(car.wheelAngle);
+            ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(0, 0, car.wheelRadius, 0, Math.PI*2); ctx.fill(); // الكاوتش
+            ctx.fillStyle = '#ccc'; ctx.beginPath(); ctx.arc(0, 0, car.wheelRadius * 0.5, 0, Math.PI*2); ctx.fill(); // الجنط
+            ctx.lineWidth = 3; ctx.strokeStyle = '#fff'; //ซี่ล้อ
+            for(let i=0; i<4; i++) { ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(car.wheelRadius*0.7, 0); ctx.stroke(); ctx.rotate(Math.PI/2); }
+            ctx.restore();
+        }
+
+        let cos = Math.cos(car.angle), sin = Math.sin(car.angle);
+        drawWheel(car.x + car.rearOffset*cos - 15*sin, car.y + car.rearOffset*sin + 15*cos);
+        drawWheel(car.x + car.frontOffset*cos - 15*sin, car.y + car.frontOffset*sin + 15*cos);
+
+        ctx.restore();
     }
 
-    function drawUI() {
-        // لوحة المعلومات اليسرى
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-        ctx.roundRect ? ctx.roundRect(15, 15, 220, 110, 10) : ctx.fillRect(15, 15, 220, 110);
-        ctx.fill();
-        
-        ctx.fillStyle = '#fff';
-        ctx.font = 'bold 22px Arial';
-        ctx.textAlign = 'right';
-        ctx.fillText(`اللفة: ${lap}`, 215, 45);
-        ctx.fillStyle = '#ffcc00';
-        ctx.fillText(`المستوى: ${level}`, 215, 75);
-        ctx.fillStyle = '#00ffcc';
-        ctx.fillText(`السرعة: ${Math.floor(car.speed * 10)} km/h`, 215, 105);
-        
-        // لوحة الوقت اليمنى
-        let elapsed = Math.floor((Date.now() - startTime) / 1000);
-        let mins = Math.floor(elapsed / 60);
-        let secs = elapsed % 60;
-        
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-        ctx.roundRect ? ctx.roundRect(canvas.width - 165, 15, 150, 50, 10) : ctx.fillRect(canvas.width - 165, 15, 150, 50);
-        ctx.fill();
-        
-        ctx.fillStyle = '#fff';
-        ctx.font = 'bold 22px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText(`${mins}:${secs.toString().padStart(2, '0')} ⏱️`, canvas.width - 90, 48);
-        ctx.textAlign = 'start'; // إعادة الضبط
-    }
-
-    // حلقة اللعبة المستمرة
-    function loop() {
-        update();
-        draw();
-        requestAnimationFrame(loop);
-    }
-
+    // 8. حلقة اللعبة المستمرة
+    function loop() { update(); draw(); requestAnimationFrame(loop); }
     loop();
 </script>
 </body>
