@@ -22,8 +22,8 @@
         .hidden { display: none !important; }
 
         /* العناوين والأزرار */
-        h1 { font-size: 55px; color: #facc15; text-shadow: 0 0 20px #facc15; margin-bottom: 30px; text-align: center; line-height: 1.2;}
-        h2 { color: #38bdf8; margin-bottom: 15px; }
+        h1 { font-size: 45px; color: #facc15; text-shadow: 0 0 20px #facc15; margin-bottom: 30px; text-align: center; line-height: 1.2;}
+        h2 { color: #38bdf8; margin-bottom: 15px; font-size: 22px; }
         .btn-menu {
             width: 280px; padding: 15px; margin: 10px; font-size: 22px; font-family: 'Changa';
             background: #e11d48; color: white; border: none; border-radius: 12px;
@@ -34,7 +34,7 @@
         .btn-secondary:active { box-shadow: 0 0 0 #1d4ed8; }
 
         /* الجراج (اختيار السيارة واللون) */
-        .options-container { display: flex; gap: 15px; margin-bottom: 20px; }
+        .options-container { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; justify-content: center; }
         .car-type-btn {
             background: #334155; border: 3px solid transparent; padding: 10px 20px;
             border-radius: 10px; color: white; cursor: pointer; font-family: 'Changa'; font-size: 18px;
@@ -50,13 +50,13 @@
         #preview-canvas { background: rgba(0,0,0,0.3); border-radius: 15px; margin-bottom: 20px; border: 2px solid #38bdf8; }
 
         /* منصة التتويج */
-        #podium-container { display: flex; align-items: flex-end; justify-content: center; gap: 15px; margin-top: 20px; height: 250px; }
+        #podium-container { display: flex; align-items: flex-end; justify-content: center; gap: 10px; margin-top: 20px; height: 250px; width: 100%; overflow: hidden; }
         .podium-step {
             display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
-            width: 100px; border-radius: 10px 10px 0 0; color: #000; font-weight: bold; font-size: 40px;
+            width: 80px; border-radius: 10px 10px 0 0; color: #000; font-weight: bold; font-size: 35px;
             box-shadow: inset 0 0 20px rgba(0,0,0,0.3); position: relative; padding-top: 10px;
         }
-        .podium-car-canvas { margin-top: -60px; margin-bottom: 10px; } /* لرفع السيارة فوق المنصة */
+        .podium-car-canvas { margin-top: -50px; margin-bottom: 5px; width: 100px; } /* لرفع السيارة فوق المنصة */
         
         #step1 { height: 180px; background: linear-gradient(#fde047, #b45309); z-index: 3; }
         #step2 { height: 120px; background: linear-gradient(#cbd5e1, #475569); z-index: 2; }
@@ -68,12 +68,12 @@
         .hud-top { display: flex; justify-content: space-between; padding: 15px; }
         .hud-box {
             background: rgba(0,0,0,0.7); padding: 5px 20px; border-radius: 12px;
-            color: white; font-size: 22px; font-weight: bold; border: 2px solid #3b82f6; backdrop-filter: blur(5px);
+            color: white; font-size: 20px; font-weight: bold; border: 2px solid #3b82f6; backdrop-filter: blur(5px);
         }
         
-        /* الدواسات */
-        #controls { position: absolute; bottom: 30px; left: 30px; right: 30px; display: flex; justify-content: space-between; pointer-events: auto; }
-        .pedal { width: 85px; height: 115px; border-radius: 15px; background: linear-gradient(to bottom, #444, #222); border: 3px solid #666; color: white; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: bold; box-shadow: 0 8px 0 #111; cursor: pointer; }
+        /* الدواسات للهاتف */
+        #controls { position: absolute; bottom: 30px; left: 20px; right: 20px; display: flex; justify-content: space-between; pointer-events: auto; }
+        .pedal { width: 85px; height: 115px; border-radius: 15px; background: linear-gradient(to bottom, #444, #222); border: 3px solid #666; color: white; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: bold; box-shadow: 0 8px 0 #111; cursor: pointer; user-select: none; }
         .pedal.active { transform: translateY(8px); box-shadow: 0 0 0 #111; }
         #pedal-gas.active { border-color: #22c55e; }
         #pedal-brake.active { border-color: #ef4444; }
@@ -92,7 +92,7 @@
 
 <!-- 2. شاشة الجراج -->
 <div id="garage" class="screen hidden">
-    <h1>تجهيز السيارة</h1>
+    <h2>تجهيز السيارة</h2>
     <canvas id="preview-canvas" width="200" height="100"></canvas>
     
     <h2>شكل السيارة:</h2>
@@ -111,14 +111,14 @@
         <div class="color-swatch" style="background: #a855f7;" onclick="selectColor(this, '#a855f7')"></div>
         <div class="color-swatch" style="background: #ffffff;" onclick="selectColor(this, '#ffffff')"></div>
     </div>
-    <button class="btn-menu" style="margin-top: 20px;" onclick="showScreen('main-menu')">حفظ ورجوع</button>
+    <button class="btn-menu" style="margin-top: 10px;" onclick="showScreen('main-menu')">حفظ ورجوع</button>
 </div>
 
 <!-- 3. شاشة الإعدادات -->
 <div id="settings" class="screen hidden">
     <h1>الإعدادات</h1>
     <button class="btn-menu" id="btn-sound" onclick="toggleSound()">🔊 الصوت: مفعل</button>
-    <button class="btn-menu btn-secondary" style="margin-top: 30px;" onclick="showScreen('main-menu')">رجوع</button>
+    <button class="btn-menu btn-secondary" style="margin-top: 30px;" onclick="showScreen('main-menu')">رجوع للقائمة</button>
 </div>
 
 <!-- 4. منصة التتويج (النهاية) -->
@@ -129,7 +129,7 @@
         <!-- يتم رسم المنصة هنا برمجياً -->
     </div>
 
-    <button class="btn-menu" id="next-level-btn" style="margin-top: 40px;" onclick="nextLevelAction()">المرحلة التالية ✈️</button>
+    <button class="btn-menu" id="next-level-btn" style="margin-top: 30px;" onclick="nextLevelAction()">المرحلة التالية ✈️</button>
     <button class="btn-menu btn-secondary" onclick="showScreen('main-menu')">القائمة الرئيسية</button>
 </div>
 
@@ -157,49 +157,52 @@
     function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
     window.addEventListener('resize', resize); resize();
 
-    // === نظام الصوت المبرمج ===
-    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    // === حل مشكلة تعارض المتغيرات (نظام الصوت) ===
+    const GameAudioContext = window.AudioContext || window.webkitAudioContext;
     let audioCtx;
     function initAudio() {
-        if (!audioCtx) audioCtx = new AudioContext();
-        if (audioCtx.state === 'suspended') audioCtx.resume();
+        try {
+            if (!audioCtx && GameAudioContext) audioCtx = new GameAudioContext();
+            if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+        } catch(e) { console.log("Audio not supported"); }
     }
     function playTone(freq, type, duration) {
         if (!playerConfig.sound || !audioCtx) return;
-        let osc = audioCtx.createOscillator(); let gain = audioCtx.createGain();
-        osc.type = type; osc.frequency.value = freq;
-        osc.connect(gain); gain.connect(audioCtx.destination);
-        osc.start(); gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
-        osc.stop(audioCtx.currentTime + duration);
+        try {
+            let osc = audioCtx.createOscillator(); let gain = audioCtx.createGain();
+            osc.type = type; osc.frequency.value = freq;
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(); gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+            osc.stop(audioCtx.currentTime + duration);
+        } catch(e) {}
     }
 
-    // === دوال رسم السيارات المركزية (تستخدم في اللعبة، الجراج، والمنصة) ===
+    // === دوال رسم السيارات المركزية ===
     function drawCarShape(ctx, type, color, x, y, angle, wheelAngle, wheelRadius) {
         ctx.save(); ctx.translate(x, y - wheelRadius - 5); ctx.rotate(angle);
         ctx.fillStyle = color;
 
         if (type === 'sports') {
-            ctx.beginPath(); ctx.moveTo(-50, 5); ctx.lineTo(-50, -10); ctx.lineTo(10, -25);
-            ctx.lineTo(40, -5); ctx.lineTo(55, 0); ctx.lineTo(-45, 10); ctx.fill();
-            ctx.fillStyle = '#222'; ctx.beginPath(); ctx.moveTo(-10, -20); ctx.lineTo(10, -20); ctx.lineTo(20, -5); ctx.lineTo(-25, -5); ctx.fill();
+            ctx.beginPath(); ctx.moveTo(-45, 5); ctx.lineTo(-45, -10); ctx.lineTo(10, -20);
+            ctx.lineTo(35, -5); ctx.lineTo(50, 0); ctx.lineTo(-40, 10); ctx.fill();
+            ctx.fillStyle = '#222'; ctx.beginPath(); ctx.moveTo(-10, -15); ctx.lineTo(10, -15); ctx.lineTo(20, -5); ctx.lineTo(-20, -5); ctx.fill();
         } 
         else if (type === 'truck') {
-            ctx.fillRect(-50, -20, 100, 30); // الصندوق
-            ctx.fillRect(20, -40, 30, 20); // الكابينة
-            ctx.fillStyle = '#888'; ctx.fillRect(-50, 0, 110, 10); // الصدام
-            ctx.fillStyle = '#aaddff'; ctx.fillRect(30, -35, 15, 15); // الشباك
+            ctx.fillRect(-45, -20, 90, 30); // الصندوق
+            ctx.fillRect(15, -35, 25, 20); // الكابينة
+            ctx.fillStyle = '#888'; ctx.fillRect(-45, 0, 100, 10); // الصدام
+            ctx.fillStyle = '#aaddff'; ctx.fillRect(25, -30, 10, 10); // الشباك
         } 
         else if (type === 'f1') {
-            ctx.fillRect(-50, -5, 110, 10); // الجسم الأساسي
-            ctx.fillRect(-45, -20, 10, 15); ctx.fillRect(-50, -25, 20, 5); // الجناح الخلفي
-            ctx.beginPath(); ctx.moveTo(0, -5); ctx.lineTo(20, -20); ctx.lineTo(30, -5); ctx.fill(); // الكابينة
+            ctx.fillRect(-45, -5, 100, 8); // الجسم الأساسي
+            ctx.fillRect(-40, -15, 8, 10); ctx.fillRect(-45, -20, 15, 5); // الجناح الخلفي
+            ctx.beginPath(); ctx.moveTo(0, -5); ctx.lineTo(15, -15); ctx.lineTo(25, -5); ctx.fill(); // الكابينة
         }
 
-        // العجلات
-        let wOffset = type==='truck' ? 25 : 18;
-        drawWheel(ctx, -30, 10, wheelRadius, wheelAngle, wOffset);
-        drawWheel(ctx, 35, 10, wheelRadius, wheelAngle, wOffset);
+        let wOffset = type==='truck' ? 22 : 15;
+        drawWheel(ctx, -25, 10, wheelRadius, wheelAngle, wOffset);
+        drawWheel(ctx, 30, 10, wheelRadius, wheelAngle, wOffset);
         ctx.restore();
     }
     
@@ -212,31 +215,31 @@
     }
 
     // === إدارة الجراج والقوائم ===
-    function showScreen(id) {
+    window.showScreen = function(id) {
         document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
         if(id) document.getElementById(id).classList.remove('hidden');
         document.getElementById('game-ui').style.display = id === 'playing' ? 'block' : 'none';
         gameState = id;
         if(id === 'garage') updatePreview();
-    }
-    function selectType(btn, type) {
+    };
+    window.selectType = function(btn, type) {
         document.querySelectorAll('.car-type-btn').forEach(b => b.classList.remove('selected'));
         btn.classList.add('selected'); playerConfig.type = type; updatePreview();
-    }
-    function selectColor(el, color) {
+    };
+    window.selectColor = function(el, color) {
         document.querySelectorAll('.color-swatch').forEach(c => c.classList.remove('selected'));
         el.classList.add('selected'); playerConfig.color = color; updatePreview();
-    }
+    };
     function updatePreview() {
         const pCtx = document.getElementById('preview-canvas').getContext('2d');
         pCtx.clearRect(0, 0, 200, 100);
-        drawCarShape(pCtx, playerConfig.type, playerConfig.color, 100, 75, 0, 0, 15);
+        drawCarShape(pCtx, playerConfig.type, playerConfig.color, 100, 70, 0, 0, 15);
     }
-    function toggleSound() {
+    window.toggleSound = function() {
         playerConfig.sound = !playerConfig.sound;
         document.getElementById('btn-sound').innerText = playerConfig.sound ? '🔊 الصوت: مفعل' : '🔇 الصوت: معطل';
         initAudio();
-    }
+    };
 
     // === العوالم ومحرك اللعبة ===
     const WORLDS = [
@@ -250,7 +253,7 @@
     class Car {
         constructor(name, type, color, startX, speedConfig, isPlayer=false) {
             this.name = name; this.type = type; this.color = color;
-            this.x = startX; this.y = 0; this.wheelRadius = type==='truck'? 22 : 18;
+            this.x = startX; this.y = 0; this.wheelRadius = type==='truck'? 20 : 15;
             this.speed = 0; this.maxSpeed = speedConfig.max; this.acc = speedConfig.acc;
             this.angle = 0; this.wheelAngle = 0; this.vy = 0;
             this.isPlayer = isPlayer; this.onGround = false; this.finished = false;
@@ -295,6 +298,7 @@
     // === التحكم ===
     window.addEventListener('keydown', e => { if(e.code === 'ArrowRight') keys.gas = true; if(e.code === 'ArrowLeft') keys.brake = true; });
     window.addEventListener('keyup', e => { if(e.code === 'ArrowRight') keys.gas = false; if(e.code === 'ArrowLeft') keys.brake = false; });
+    
     const setBtn = (id, k) => {
         let b = document.getElementById(id);
         const press = e => { e.preventDefault(); keys[k] = true; b.classList.add('active'); };
@@ -305,7 +309,7 @@
     setBtn('pedal-gas', 'gas'); setBtn('pedal-brake', 'brake');
 
     // === اللعب وبناء المسار ===
-    function startGame() {
+    window.startGame = function() {
         initAudio(); showScreen('playing'); world = WORLDS[currentWorldIdx];
         document.getElementById('hud-world').innerText = world.name;
         
@@ -316,8 +320,9 @@
             new Car('AI-2', aiTypes[Math.floor(Math.random()*3)], '#94a3b8', 200, {max: 25+world.diff, acc: 0.28}),
             new Car('AI-3', aiTypes[Math.floor(Math.random()*3)], '#10b981', 100, {max: 23+world.diff, acc: 0.32})
         ];
-        cameraX = 0; keys.gas = false; keys.brake = false; loop();
-    }
+        cameraX = 0; keys.gas = false; keys.brake = false;
+        if(!window.isLooping) { window.isLooping = true; requestAnimationFrame(loop); }
+    };
 
     function getTrackY(x) {
         if(x < 1000) return { y: canvas.height * 0.7, angle: 0 };
@@ -328,6 +333,11 @@
     }
 
     // === شاشة التتويج الذكية ===
+    window.nextLevelAction = function() {
+        if(currentWorldIdx < WORLDS.length - 1) { currentWorldIdx++; startGame(); }
+        else { currentWorldIdx = 0; showScreen('main-menu'); }
+    };
+
     function showVictory() {
         showScreen('victory-screen');
         let sorted = [...cars].sort((a,b) => b.x - a.x);
@@ -336,31 +346,30 @@
         let btn = document.getElementById('next-level-btn');
         
         if(playerRank === 1) {
-            title.innerHTML = '🎉 تهانينا! لقد فزت بالمركز الأول 🎉'; title.style.color = '#facc15';
+            title.innerHTML = '🎉 تهانينا! لقد فزت 🎉'; title.style.color = '#facc15';
             playTone(400, 'sine', 0.2); setTimeout(()=> playTone(600, 'sine', 0.5), 200);
-            if(currentWorldIdx < WORLDS.length-1) { btn.innerText = 'السفر للدولة التالية ✈️'; btn.onclick = () => { currentWorldIdx++; startGame(); }; }
-            else { btn.innerText = 'لقد ختمت اللعبة بالكامل! 🏆'; btn.onclick = () => { currentWorldIdx=0; showScreen('main-menu'); }; }
+            if(currentWorldIdx < WORLDS.length-1) { btn.innerText = 'السفر للدولة التالية ✈️'; btn.onclick = nextLevelAction; }
+            else { btn.innerText = 'لقد ختمت اللعبة بالكامل! 🏆'; btn.onclick = nextLevelAction; }
         } else {
-            title.innerHTML = `حظ أوفر.. لقد حققت المركز ${playerRank} 💔`; title.style.color = '#ef4444';
+            title.innerHTML = `حظ أوفر.. المركز ${playerRank} 💔`; title.style.color = '#ef4444';
             playTone(200, 'sawtooth', 0.5);
-            btn.innerText = 'إعادة المحاولة 🔄'; btn.onclick = () => startGame();
+            btn.innerText = 'إعادة المحاولة 🔄'; btn.onclick = startGame;
         }
 
-        // بناء المنصة برمجياً ورسم السيارات عليها (اللاعب فوق إذا فاز)
+        // بناء المنصة برمجياً
         let podium = document.getElementById('podium-container'); podium.innerHTML = '';
         const order = [2, 1, 3, 4]; // ترتيب العرض
         order.forEach(rank => {
             if(rank > sorted.length) return;
             let car = sorted[rank-1];
             
-            // إنشاء لوحة رسم صغيرة لكل سيارة فوق المنصة
             let stepDiv = document.createElement('div');
             stepDiv.className = 'podium-step'; stepDiv.id = 'step' + rank;
             
             let carCanvas = document.createElement('canvas');
-            carCanvas.width = 120; carCanvas.height = 60;
+            carCanvas.width = 100; carCanvas.height = 60;
             carCanvas.className = 'podium-car-canvas';
-            drawCarShape(carCanvas.getContext('2d'), car.type, car.color, 60, 45, 0, 0, car.wheelRadius*0.8);
+            drawCarShape(carCanvas.getContext('2d'), car.type, car.color, 50, 45, 0, 0, car.wheelRadius*0.7);
             
             stepDiv.appendChild(carCanvas);
             stepDiv.appendChild(document.createTextNode(rank));
@@ -370,18 +379,9 @@
 
     // === حلقة التحديث المستمرة ===
     function loop() {
-        if(gameState !== 'playing') return;
-        let player = cars.find(c => c.isPlayer);
-        cars.forEach(c => c.update(getTrackY(c.x)));
-        cameraX += (player.x - canvas.width * 0.3 - cameraX) * 0.1;
+        if(gameState === 'playing') {
+            let player = cars.find(c => c.isPlayer);
+            cars.forEach(c => c.update(getTrackY(c.x)));
+            cameraX += (player.x - canvas.width * 0.3 - cameraX) * 0.1;
 
-        let sorted = [...cars].sort((a,b) => b.x - a.x);
-        document.getElementById('hud-rank').innerText = `المركز: ${sorted.findIndex(c=>c.isPlayer) + 1} / 4`;
-
-        if(player.x >= world.length && !player.finished) {
-            player.finished = true; setTimeout(showVictory, 1000);
-        }
-
-        let grad = ctx.createLinearGradient(0,0,0,canvas.height);
-        grad.addColorStop(0, world.bg1); grad.addColorStop(1, world.bg2);
-        ctx.fillStyle = grad; ctx.f
+            let sorted = [...cars].sort((a,b) => b.x - a.
