@@ -3,351 +3,385 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>لعبة سيارات احترافية - Ultimate Edition</title>
+    <title>لعبة سباق العوالم - الإصدار الذهبي</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Changa:wght@400;700&display=swap');
         body, html {
             margin: 0; padding: 0; width: 100%; height: 100%;
-            overflow: hidden; background-color: #1a1a2e;
-            font-family: 'Changa', sans-serif;
-            touch-action: none; user-select: none;
+            overflow: hidden; background-color: #0f172a;
+            font-family: 'Changa', sans-serif; touch-action: none; user-select: none;
         }
-        canvas { display: block; }
+        canvas { display: block; position: absolute; top: 0; left: 0; z-index: 1; }
         
-        /* واجهة المستخدم */
-        #ui-container {
-            position: absolute; top: 20px; left: 20px; right: 20px;
-            display: flex; justify-content: space-between; pointer-events: none;
+        /* نظام الشاشات */
+        .screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            background: linear-gradient(135deg, #0f172a, #1e293b); z-index: 50; color: white;
         }
-        .score-board {
-            background: linear-gradient(135deg, rgba(0,0,0,0.8), rgba(20,20,40,0.8));
-            padding: 15px 30px; border-radius: 15px; border: 2px solid #e94560;
-            color: white; font-size: 24px; font-weight: bold;
-            box-shadow: 0 0 20px rgba(233, 69, 96, 0.4);
-            backdrop-filter: blur(10px);
-        }
-        .score-board span { color: #e94560; }
+        .hidden { display: none !important; }
 
-        /* أزرار التحكم (دواسات) */
-        #controls {
-            position: absolute; bottom: 40px; left: 40px; right: 40px;
-            display: flex; justify-content: space-between; z-index: 10;
+        /* العناوين والأزرار */
+        h1 { font-size: 55px; color: #facc15; text-shadow: 0 0 20px #facc15; margin-bottom: 30px; text-align: center; line-height: 1.2;}
+        h2 { color: #38bdf8; margin-bottom: 15px; }
+        .btn-menu {
+            width: 280px; padding: 15px; margin: 10px; font-size: 22px; font-family: 'Changa';
+            background: #e11d48; color: white; border: none; border-radius: 12px;
+            cursor: pointer; box-shadow: 0 6px 0 #9f1239; transition: 0.1s; font-weight: bold;
         }
-        .pedal {
-            width: 90px; height: 130px; border-radius: 15px;
-            background: linear-gradient(to bottom, #333, #111);
-            border: 4px solid #555; box-shadow: 0 10px 0 #000, 0 15px 20px rgba(0,0,0,0.5);
-            color: white; font-size: 22px; font-weight: bold;
-            display: flex; align-items: center; justify-content: center;
-            cursor: pointer; transition: all 0.1s;
-        }
-        .pedal:active, .pedal.active {
-            transform: translateY(10px); box-shadow: 0 0 0 #000, 0 5px 10px rgba(0,0,0,0.5);
-        }
-        #pedal-gas { border-color: #4CAF50; }
-        #pedal-gas:active, #pedal-gas.active { border-color: #00ff00; box-shadow: 0 0 30px rgba(0,255,0,0.5); }
-        #pedal-brake { border-color: #e94560; }
-        #pedal-brake:active, #pedal-brake.active { border-color: #ff0000; box-shadow: 0 0 30px rgba(255,0,0,0.5); }
+        .btn-menu:active { transform: translateY(6px); box-shadow: 0 0 0 #9f1239; }
+        .btn-secondary { background: #3b82f6; box-shadow: 0 6px 0 #1d4ed8; }
+        .btn-secondary:active { box-shadow: 0 0 0 #1d4ed8; }
 
+        /* الجراج (اختيار السيارة واللون) */
+        .options-container { display: flex; gap: 15px; margin-bottom: 20px; }
+        .car-type-btn {
+            background: #334155; border: 3px solid transparent; padding: 10px 20px;
+            border-radius: 10px; color: white; cursor: pointer; font-family: 'Changa'; font-size: 18px;
+        }
+        .car-type-btn.selected { border-color: #facc15; background: #475569; }
+        
+        .color-swatch {
+            width: 45px; height: 45px; border-radius: 50%; border: 3px solid transparent;
+            cursor: pointer; transition: transform 0.2s;
+        }
+        .color-swatch.selected { border-color: white; transform: scale(1.2); box-shadow: 0 0 15px white; }
+        
+        #preview-canvas { background: rgba(0,0,0,0.3); border-radius: 15px; margin-bottom: 20px; border: 2px solid #38bdf8; }
+
+        /* منصة التتويج */
+        #podium-container { display: flex; align-items: flex-end; justify-content: center; gap: 15px; margin-top: 20px; height: 250px; }
+        .podium-step {
+            display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+            width: 100px; border-radius: 10px 10px 0 0; color: #000; font-weight: bold; font-size: 40px;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.3); position: relative; padding-top: 10px;
+        }
+        .podium-car-canvas { margin-top: -60px; margin-bottom: 10px; } /* لرفع السيارة فوق المنصة */
+        
+        #step1 { height: 180px; background: linear-gradient(#fde047, #b45309); z-index: 3; }
+        #step2 { height: 120px; background: linear-gradient(#cbd5e1, #475569); z-index: 2; }
+        #step3 { height: 80px; background: linear-gradient(#fdba74, #78350f); z-index: 1; }
+        #step4 { height: 50px; background: #1e293b; color: white; }
+
+        /* واجهة اللعب */
+        #game-ui { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; display: none; }
+        .hud-top { display: flex; justify-content: space-between; padding: 15px; }
+        .hud-box {
+            background: rgba(0,0,0,0.7); padding: 5px 20px; border-radius: 12px;
+            color: white; font-size: 22px; font-weight: bold; border: 2px solid #3b82f6; backdrop-filter: blur(5px);
+        }
+        
+        /* الدواسات */
+        #controls { position: absolute; bottom: 30px; left: 30px; right: 30px; display: flex; justify-content: space-between; pointer-events: auto; }
+        .pedal { width: 85px; height: 115px; border-radius: 15px; background: linear-gradient(to bottom, #444, #222); border: 3px solid #666; color: white; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: bold; box-shadow: 0 8px 0 #111; cursor: pointer; }
+        .pedal.active { transform: translateY(8px); box-shadow: 0 0 0 #111; }
+        #pedal-gas.active { border-color: #22c55e; }
+        #pedal-brake.active { border-color: #ef4444; }
         @media (min-width: 800px) { #controls { display: none; } }
     </style>
 </head>
 <body>
 
-<div id="ui-container">
-    <div class="score-board">المسافة: <span id="distanceValue">0</span> متر</div>
+<!-- 1. شاشة القائمة الرئيسية -->
+<div id="main-menu" class="screen">
+    <h1>سباق العوالم<br>🚗 World Racing 🌍</h1>
+    <button class="btn-menu" onclick="startGame()">🏁 بدء السباق</button>
+    <button class="btn-menu btn-secondary" onclick="showScreen('garage')">🔧 اختيار وتعديل السيارة</button>
+    <button class="btn-menu btn-secondary" onclick="showScreen('settings')">⚙️ الإعدادات</button>
+</div>
+
+<!-- 2. شاشة الجراج -->
+<div id="garage" class="screen hidden">
+    <h1>تجهيز السيارة</h1>
+    <canvas id="preview-canvas" width="200" height="100"></canvas>
+    
+    <h2>شكل السيارة:</h2>
+    <div class="options-container">
+        <button class="car-type-btn selected" onclick="selectType(this, 'sports')">رياضية</button>
+        <button class="car-type-btn" onclick="selectType(this, 'truck')">شاحنة</button>
+        <button class="car-type-btn" onclick="selectType(this, 'f1')">فورمولا</button>
+    </div>
+
+    <h2>لون السيارة:</h2>
+    <div class="options-container">
+        <div class="color-swatch selected" style="background: #e11d48;" onclick="selectColor(this, '#e11d48')"></div>
+        <div class="color-swatch" style="background: #3b82f6;" onclick="selectColor(this, '#3b82f6')"></div>
+        <div class="color-swatch" style="background: #22c55e;" onclick="selectColor(this, '#22c55e')"></div>
+        <div class="color-swatch" style="background: #facc15;" onclick="selectColor(this, '#facc15')"></div>
+        <div class="color-swatch" style="background: #a855f7;" onclick="selectColor(this, '#a855f7')"></div>
+        <div class="color-swatch" style="background: #ffffff;" onclick="selectColor(this, '#ffffff')"></div>
+    </div>
+    <button class="btn-menu" style="margin-top: 20px;" onclick="showScreen('main-menu')">حفظ ورجوع</button>
+</div>
+
+<!-- 3. شاشة الإعدادات -->
+<div id="settings" class="screen hidden">
+    <h1>الإعدادات</h1>
+    <button class="btn-menu" id="btn-sound" onclick="toggleSound()">🔊 الصوت: مفعل</button>
+    <button class="btn-menu btn-secondary" style="margin-top: 30px;" onclick="showScreen('main-menu')">رجوع</button>
+</div>
+
+<!-- 4. منصة التتويج (النهاية) -->
+<div id="victory-screen" class="screen hidden">
+    <h1 id="victory-title">تهانينا! 🎉</h1>
+    
+    <div id="podium-container">
+        <!-- يتم رسم المنصة هنا برمجياً -->
+    </div>
+
+    <button class="btn-menu" id="next-level-btn" style="margin-top: 40px;" onclick="nextLevelAction()">المرحلة التالية ✈️</button>
+    <button class="btn-menu btn-secondary" onclick="showScreen('main-menu')">القائمة الرئيسية</button>
+</div>
+
+<!-- 5. واجهة اللعب -->
+<div id="game-ui">
+    <div class="hud-top">
+        <div class="hud-box" id="hud-rank">المركز: 1 / 4</div>
+        <div class="hud-box" id="hud-world">🇪🇬 مصر</div>
+    </div>
+    <div id="controls">
+        <div class="pedal" id="pedal-brake">فرامل</div>
+        <div class="pedal" id="pedal-gas">بنزين</div>
+    </div>
 </div>
 
 <canvas id="gameCanvas"></canvas>
 
-<!-- دواسات البنزين والفرامل للهواتف -->
-<div id="controls">
-    <div class="pedal" id="pedal-brake">فرامل</div>
-    <div class="pedal" id="pedal-gas">بنزين</div>
-</div>
-
 <script>
+    // === إعدادات اللاعب والتطبيق ===
+    let playerConfig = { type: 'sports', color: '#e11d48', sound: true };
+    let gameState = 'menu';
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     
     function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
     window.addEventListener('resize', resize); resize();
 
-    // 1. إعدادات السيارة والفيزياء (مضبوطة بدقة)
-    let car = {
-        x: 300, y: 0, width: 120, height: 35, wheelRadius: 20,
-        speed: 0, maxSpeed: 25, acceleration: 0.3, braking: 0.6,
-        angle: 0, wheelAngle: 0,
-        vy: 0, gravity: 0.6,
-        onGround: false
-    };
+    // === نظام الصوت المبرمج ===
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    let audioCtx;
+    function initAudio() {
+        if (!audioCtx) audioCtx = new AudioContext();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
+    function playTone(freq, type, duration) {
+        if (!playerConfig.sound || !audioCtx) return;
+        let osc = audioCtx.createOscillator(); let gain = audioCtx.createGain();
+        osc.type = type; osc.frequency.value = freq;
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.start(); gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+        osc.stop(audioCtx.currentTime + duration);
+    }
 
-    let cameraX = 0;
+    // === دوال رسم السيارات المركزية (تستخدم في اللعبة، الجراج، والمنصة) ===
+    function drawCarShape(ctx, type, color, x, y, angle, wheelAngle, wheelRadius) {
+        ctx.save(); ctx.translate(x, y - wheelRadius - 5); ctx.rotate(angle);
+        ctx.fillStyle = color;
+
+        if (type === 'sports') {
+            ctx.beginPath(); ctx.moveTo(-50, 5); ctx.lineTo(-50, -10); ctx.lineTo(10, -25);
+            ctx.lineTo(40, -5); ctx.lineTo(55, 0); ctx.lineTo(-45, 10); ctx.fill();
+            ctx.fillStyle = '#222'; ctx.beginPath(); ctx.moveTo(-10, -20); ctx.lineTo(10, -20); ctx.lineTo(20, -5); ctx.lineTo(-25, -5); ctx.fill();
+        } 
+        else if (type === 'truck') {
+            ctx.fillRect(-50, -20, 100, 30); // الصندوق
+            ctx.fillRect(20, -40, 30, 20); // الكابينة
+            ctx.fillStyle = '#888'; ctx.fillRect(-50, 0, 110, 10); // الصدام
+            ctx.fillStyle = '#aaddff'; ctx.fillRect(30, -35, 15, 15); // الشباك
+        } 
+        else if (type === 'f1') {
+            ctx.fillRect(-50, -5, 110, 10); // الجسم الأساسي
+            ctx.fillRect(-45, -20, 10, 15); ctx.fillRect(-50, -25, 20, 5); // الجناح الخلفي
+            ctx.beginPath(); ctx.moveTo(0, -5); ctx.lineTo(20, -20); ctx.lineTo(30, -5); ctx.fill(); // الكابينة
+        }
+
+        // العجلات
+        let wOffset = type==='truck' ? 25 : 18;
+        drawWheel(ctx, -30, 10, wheelRadius, wheelAngle, wOffset);
+        drawWheel(ctx, 35, 10, wheelRadius, wheelAngle, wOffset);
+        ctx.restore();
+    }
+    
+    function drawWheel(ctx, x, y, radius, angle, actualRadius) {
+        ctx.save(); ctx.translate(x, y); ctx.rotate(angle);
+        ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(0, 0, actualRadius, 0, Math.PI*2); ctx.fill();
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
+        for(let i=0; i<4; i++) { ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(actualRadius*0.6, 0); ctx.stroke(); ctx.rotate(Math.PI/2); }
+        ctx.restore();
+    }
+
+    // === إدارة الجراج والقوائم ===
+    function showScreen(id) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+        if(id) document.getElementById(id).classList.remove('hidden');
+        document.getElementById('game-ui').style.display = id === 'playing' ? 'block' : 'none';
+        gameState = id;
+        if(id === 'garage') updatePreview();
+    }
+    function selectType(btn, type) {
+        document.querySelectorAll('.car-type-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected'); playerConfig.type = type; updatePreview();
+    }
+    function selectColor(el, color) {
+        document.querySelectorAll('.color-swatch').forEach(c => c.classList.remove('selected'));
+        el.classList.add('selected'); playerConfig.color = color; updatePreview();
+    }
+    function updatePreview() {
+        const pCtx = document.getElementById('preview-canvas').getContext('2d');
+        pCtx.clearRect(0, 0, 200, 100);
+        drawCarShape(pCtx, playerConfig.type, playerConfig.color, 100, 75, 0, 0, 15);
+    }
+    function toggleSound() {
+        playerConfig.sound = !playerConfig.sound;
+        document.getElementById('btn-sound').innerText = playerConfig.sound ? '🔊 الصوت: مفعل' : '🔇 الصوت: معطل';
+        initAudio();
+    }
+
+    // === العوالم ومحرك اللعبة ===
+    const WORLDS = [
+        { name: '🇪🇬 مصر - الصحراء', bg1: '#ff9a44', bg2: '#fc6076', fill: '#d4a373', line: '#faedcb', length: 12000, diff: 1 },
+        { name: '🇯🇵 اليابان - نيون', bg1: '#0f3460', bg2: '#1a1a2e', fill: '#16213e', line: '#e94560', length: 15000, diff: 1.5 },
+        { name: '🇮🇸 آيسلندا - ثلوج', bg1: '#83a4d4', bg2: '#b6fbff', fill: '#ffffff', line: '#a1c4fd', length: 18000, diff: 2 }
+    ];
+    let currentWorldIdx = 0, world, cars = [], cameraX = 0;
     const keys = { gas: false, brake: false };
 
-    // 2. التحكم (لوحة المفاتيح واللمس)
-    window.addEventListener('keydown', (e) => { 
-        if(e.code === 'ArrowRight' || e.code === 'ArrowUp') { keys.gas = true; document.getElementById('pedal-gas').classList.add('active'); }
-        if(e.code === 'ArrowLeft' || e.code === 'ArrowDown') { keys.brake = true; document.getElementById('pedal-brake').classList.add('active'); }
-    });
-    window.addEventListener('keyup', (e) => { 
-        if(e.code === 'ArrowRight' || e.code === 'ArrowUp') { keys.gas = false; document.getElementById('pedal-gas').classList.remove('active'); }
-        if(e.code === 'ArrowLeft' || e.code === 'ArrowDown') { keys.brake = false; document.getElementById('pedal-brake').classList.remove('active'); }
-    });
+    class Car {
+        constructor(name, type, color, startX, speedConfig, isPlayer=false) {
+            this.name = name; this.type = type; this.color = color;
+            this.x = startX; this.y = 0; this.wheelRadius = type==='truck'? 22 : 18;
+            this.speed = 0; this.maxSpeed = speedConfig.max; this.acc = speedConfig.acc;
+            this.angle = 0; this.wheelAngle = 0; this.vy = 0;
+            this.isPlayer = isPlayer; this.onGround = false; this.finished = false;
+            this.aiGas = true; this.aiBrake = false;
+        }
+        update(track) {
+            this.vy += 0.6; this.y += this.vy;
+            let gas = this.isPlayer ? keys.gas : this.aiGas;
+            let brake = this.isPlayer ? keys.brake : this.aiBrake;
 
-    const setupPedal = (id, key) => {
-        const btn = document.getElementById(id);
-        const press = (e) => { e.preventDefault(); keys[key] = true; btn.classList.add('active'); };
-        const release = (e) => { e.preventDefault(); keys[key] = false; btn.classList.remove('active'); };
-        btn.addEventListener('touchstart', press); btn.addEventListener('mousedown', press);
-        btn.addEventListener('touchend', release); btn.addEventListener('mouseup', release);
-        btn.addEventListener('mouseleave', release);
+            if (this.y >= track.y - this.wheelRadius) {
+                if(!this.onGround && this.isPlayer) playTone(120, 'square', 0.1);
+                this.y = track.y - this.wheelRadius; this.vy = 0; this.onGround = true;
+                this.angle += (track.angle - this.angle) * 0.2;
+                if (gas) this.speed += this.acc;
+                else if (brake) this.speed -= 0.6;
+                else this.speed *= 0.95;
+            } else {
+                this.onGround = false;
+                if (brake) this.angle -= 0.02; if (gas) this.angle += 0.02;
+            }
+
+            if (this.speed > this.maxSpeed) this.speed = this.maxSpeed;
+            if (this.speed < -10) this.speed = -10;
+            this.x += this.speed * Math.cos(this.angle);
+            if(this.onGround) this.y += this.speed * Math.sin(this.angle);
+            this.wheelAngle += this.speed / this.wheelRadius;
+
+            if(!this.isPlayer) {
+                this.aiGas = this.speed < this.maxSpeed * 0.9 && track.angle < 0.3;
+                this.aiBrake = track.angle < -0.4 && this.speed > this.maxSpeed * 0.8;
+            }
+        }
+        draw(ctx) {
+            drawCarShape(ctx, this.type, this.color, this.x, this.y, this.angle, this.wheelAngle, this.wheelRadius);
+            ctx.save(); ctx.translate(this.x, this.y - 60);
+            ctx.fillStyle = this.isPlayer ? '#facc15' : 'white'; ctx.font = 'bold 16px Changa'; ctx.textAlign = 'center';
+            ctx.fillText(this.name, 0, 0); ctx.restore();
+        }
+    }
+
+    // === التحكم ===
+    window.addEventListener('keydown', e => { if(e.code === 'ArrowRight') keys.gas = true; if(e.code === 'ArrowLeft') keys.brake = true; });
+    window.addEventListener('keyup', e => { if(e.code === 'ArrowRight') keys.gas = false; if(e.code === 'ArrowLeft') keys.brake = false; });
+    const setBtn = (id, k) => {
+        let b = document.getElementById(id);
+        const press = e => { e.preventDefault(); keys[k] = true; b.classList.add('active'); };
+        const release = e => { e.preventDefault(); keys[k] = false; b.classList.remove('active'); };
+        b.addEventListener('touchstart', press); b.addEventListener('touchend', release);
+        b.addEventListener('mousedown', press); b.addEventListener('mouseup', release);
     };
-    setupPedal('pedal-gas', 'gas'); setupPedal('pedal-brake', 'brake');
+    setBtn('pedal-gas', 'gas'); setBtn('pedal-brake', 'brake');
 
-    // 3. تصميم الطريق (سلس وغير عشوائي)
-    function getTrackData(x) {
-        // أول 1500 بيكسل مستوية تماماً (لمنع تحرك السيارة لوحدها في البداية)
-        if (x < 1500) return { y: canvas.height * 0.7, angle: 0 };
+    // === اللعب وبناء المسار ===
+    function startGame() {
+        initAudio(); showScreen('playing'); world = WORLDS[currentWorldIdx];
+        document.getElementById('hud-world').innerText = world.name;
         
-        let adjustedX = x - 1500;
-        // دمج منحنيات جيبية لإنشاء تلال ناعمة جداً
-        let y = canvas.height * 0.7 
-              - Math.sin(adjustedX * 0.001) * 200 
-              - Math.sin(adjustedX * 0.003) * 50;
-        
-        // حساب زاوية الميل (المشتقة)
-        let slope = -Math.cos(adjustedX * 0.001) * 200 * 0.001 
-                    - Math.cos(adjustedX * 0.003) * 50 * 0.003;
-        
+        let aiTypes = ['sports', 'truck', 'f1'];
+        cars = [
+            new Car('أنت', playerConfig.type, playerConfig.color, 400, {max: 26, acc: 0.35}, true),
+            new Car('AI-1', aiTypes[Math.floor(Math.random()*3)], '#fbbf24', 300, {max: 24+world.diff, acc: 0.3}),
+            new Car('AI-2', aiTypes[Math.floor(Math.random()*3)], '#94a3b8', 200, {max: 25+world.diff, acc: 0.28}),
+            new Car('AI-3', aiTypes[Math.floor(Math.random()*3)], '#10b981', 100, {max: 23+world.diff, acc: 0.32})
+        ];
+        cameraX = 0; keys.gas = false; keys.brake = false; loop();
+    }
+
+    function getTrackY(x) {
+        if(x < 1000) return { y: canvas.height * 0.7, angle: 0 };
+        let dx = x - 1000; let f1 = 0.001 * world.diff, f2 = 0.003 * world.diff;
+        let y = canvas.height * 0.7 - Math.sin(dx * f1) * 200 - Math.sin(dx * f2) * 80;
+        let slope = -Math.cos(dx * f1) * 200 * f1 - Math.cos(dx * f2) * 80 * f2;
         return { y: y, angle: Math.atan(slope) };
     }
 
-    // 4. المنطق والفيزياء (تحديث كل إطار)
-    function update() {
-        let track = getTrackData(car.x);
-
-        // الجاذبية والقفز
-        car.vy += car.gravity;
-        car.y += car.vy;
-
-        // التحقق من ملامسة الأرض
-        if (car.y >= track.y - car.wheelRadius) {
-            car.y = track.y - car.wheelRadius;
-            car.vy = 0;
-            car.onGround = true;
-            
-            // تدوير السيارة لتناسب ميل الطريق بنعومة
-            car.angle += (track.angle - car.angle) * 0.2;
-
-            // التسارع والفرامل (تعمل فقط إذا كانت السيارة على الأرض)
-            if (keys.gas) {
-                car.speed += car.acceleration;
-            } else if (keys.brake) {
-                car.speed -= car.braking;
-            } else {
-                // محاكاة احتكاك المحرك (تتوقف السيارة تلقائياً إذا تركت الأزرار)
-                car.speed *= 0.95; 
-                if (Math.abs(car.speed) < 0.1) car.speed = 0; // إيقاف تام
-            }
+    // === شاشة التتويج الذكية ===
+    function showVictory() {
+        showScreen('victory-screen');
+        let sorted = [...cars].sort((a,b) => b.x - a.x);
+        let playerRank = sorted.findIndex(c => c.isPlayer) + 1;
+        let title = document.getElementById('victory-title');
+        let btn = document.getElementById('next-level-btn');
+        
+        if(playerRank === 1) {
+            title.innerHTML = '🎉 تهانينا! لقد فزت بالمركز الأول 🎉'; title.style.color = '#facc15';
+            playTone(400, 'sine', 0.2); setTimeout(()=> playTone(600, 'sine', 0.5), 200);
+            if(currentWorldIdx < WORLDS.length-1) { btn.innerText = 'السفر للدولة التالية ✈️'; btn.onclick = () => { currentWorldIdx++; startGame(); }; }
+            else { btn.innerText = 'لقد ختمت اللعبة بالكامل! 🏆'; btn.onclick = () => { currentWorldIdx=0; showScreen('main-menu'); }; }
         } else {
-            car.onGround = false;
-            // إمالة السيارة ببطء أثناء الطيران بناءً على الأزرار
-            if (keys.brake) car.angle -= 0.03;
-            if (keys.gas) car.angle += 0.03;
+            title.innerHTML = `حظ أوفر.. لقد حققت المركز ${playerRank} 💔`; title.style.color = '#ef4444';
+            playTone(200, 'sawtooth', 0.5);
+            btn.innerText = 'إعادة المحاولة 🔄'; btn.onclick = () => startGame();
         }
 
-        // تحديد السرعة القصوى
-        if (car.speed > car.maxSpeed) car.speed = car.maxSpeed;
-        if (car.speed < -car.maxSpeed/2) car.speed = -car.maxSpeed/2; // الرجوع للخلف أبطأ
-
-        // تحريك السيارة للأمام بناءً على السرعة
-        car.x += car.speed * Math.cos(car.angle);
-        if (car.onGround) {
-            car.y += car.speed * Math.sin(car.angle);
-        }
-
-        // دوران العجلات يعتمد على السرعة
-        car.wheelAngle += car.speed / car.wheelRadius;
-
-        // تحريك الكاميرا بسلاسة تامة لتتبع السيارة في محور X فقط
-        cameraX += (car.x - canvas.width * 0.3 - cameraX) * 0.1;
-
-        // تحديث واجهة المسافة
-        document.getElementById('distanceValue').innerText = Math.max(0, Math.floor(car.x / 50));
+        // بناء المنصة برمجياً ورسم السيارات عليها (اللاعب فوق إذا فاز)
+        let podium = document.getElementById('podium-container'); podium.innerHTML = '';
+        const order = [2, 1, 3, 4]; // ترتيب العرض
+        order.forEach(rank => {
+            if(rank > sorted.length) return;
+            let car = sorted[rank-1];
+            
+            // إنشاء لوحة رسم صغيرة لكل سيارة فوق المنصة
+            let stepDiv = document.createElement('div');
+            stepDiv.className = 'podium-step'; stepDiv.id = 'step' + rank;
+            
+            let carCanvas = document.createElement('canvas');
+            carCanvas.width = 120; carCanvas.height = 60;
+            carCanvas.className = 'podium-car-canvas';
+            drawCarShape(carCanvas.getContext('2d'), car.type, car.color, 60, 45, 0, 0, car.wheelRadius*0.8);
+            
+            stepDiv.appendChild(carCanvas);
+            stepDiv.appendChild(document.createTextNode(rank));
+            podium.appendChild(stepDiv);
+        });
     }
 
-    // 5. رسم السيارة الاحترافية
-    function drawCar(x, y, angle) {
-        ctx.save();
-        ctx.translate(x, y);
-        ctx.rotate(angle);
-
-        // ظل السيارة
-        ctx.fillStyle = 'rgba(0,0,0,0.5)';
-        ctx.beginPath(); ctx.ellipse(0, 20, 70, 10, 0, 0, Math.PI*2); ctx.fill();
-
-        // عادم السيارة (نار خفيفة عند البنزين)
-        if (keys.gas && car.onGround && car.speed > 5) {
-            ctx.fillStyle = '#ffaa00';
-            ctx.beginPath(); ctx.moveTo(-60, 10); ctx.lineTo(-80 - Math.random()*20, 5); ctx.lineTo(-60, 0); ctx.fill();
-        }
-
-        // رسم جسم السيارة (Sports Car Silhouette)
-        let bodyGradient = ctx.createLinearGradient(-60, -30, 60, 10);
-        bodyGradient.addColorStop(0, '#e94560'); // أحمر نيون
-        bodyGradient.addColorStop(1, '#8a0021');
-
-        ctx.fillStyle = bodyGradient;
-        ctx.beginPath();
-        ctx.moveTo(-60, 10); // الصدام الخلفي
-        ctx.lineTo(-60, -10); // الشنطة
-        ctx.quadraticCurveTo(-40, -15, -20, -30); // الزجاج الخلفي
-        ctx.lineTo(10, -30); // السقف
-        ctx.quadraticCurveTo(30, -15, 50, -5); // الزجاج الأمامي
-        ctx.lineTo(65, 0); // الكبوت
-        ctx.quadraticCurveTo(70, 10, 65, 15); // الصدام الأمامي
-        ctx.lineTo(-55, 15); // أسفل السيارة
-        ctx.closePath();
-        ctx.fill();
-
-        // نوافذ السيارة
-        ctx.fillStyle = '#0f3460';
-        ctx.beginPath();
-        ctx.moveTo(-15, -25); ctx.lineTo(10, -25); ctx.lineTo(25, -5); ctx.lineTo(-30, -5); ctx.closePath(); ctx.fill();
-
-        // ضوء أمامي (كشاف)
-        ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(60, 5, 4, 0, Math.PI*2); ctx.fill();
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
-        ctx.beginPath(); ctx.moveTo(62, 5); ctx.lineTo(300, -50); ctx.lineTo(300, 100); ctx.closePath(); ctx.fill();
-
-        // ضوء خلفي (يضيء عند الفرامل)
-        ctx.fillStyle = keys.brake ? '#ff0000' : '#550000';
-        ctx.beginPath(); ctx.arc(-60, 0, 4, 0, Math.PI*2); ctx.fill();
-        if (keys.brake) {
-            ctx.fillStyle = 'rgba(255, 0, 0, 0.4)';
-            ctx.beginPath(); ctx.arc(-60, 0, 15, 0, Math.PI*2); ctx.fill();
-        }
-
-        // رسم العجلات
-        drawWheel(-35, 15, car.wheelAngle);
-        drawWheel(40, 15, car.wheelAngle);
-
-        ctx.restore();
-    }
-
-    // رسم العجلة (جنط رياضي)
-    function drawWheel(x, y, angle) {
-        ctx.save();
-        ctx.translate(x, y);
-        ctx.rotate(angle);
-        
-        // الكاوتش
-        ctx.fillStyle = '#111';
-        ctx.beginPath(); ctx.arc(0, 0, car.wheelRadius, 0, Math.PI*2); ctx.fill();
-        ctx.lineWidth = 4; ctx.strokeStyle = '#222'; ctx.stroke();
-        
-        // الجنط الداخلي
-        ctx.fillStyle = '#888';
-        ctx.beginPath(); ctx.arc(0, 0, car.wheelRadius * 0.6, 0, Math.PI*2); ctx.fill();
-        
-        // أذرع الجنط
-        ctx.lineWidth = 3; ctx.strokeStyle = '#eee';
-        for(let i=0; i<5; i++) {
-            ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(car.wheelRadius*0.6, 0); ctx.stroke();
-            ctx.rotate((Math.PI * 2) / 5);
-        }
-        ctx.restore();
-    }
-
-    // 6. رسم البيئة المحيطة (الريندر)
-    function draw() {
-        // سماء ليلية متدرجة
-        let sky = ctx.createLinearGradient(0, 0, 0, canvas.height);
-        sky.addColorStop(0, '#0f3460'); sky.addColorStop(1, '#1a1a2e');
-        ctx.fillStyle = sky; ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        // قمر في الخلفية
-        ctx.fillStyle = '#f9f6f0';
-        ctx.beginPath(); ctx.arc(canvas.width * 0.8, canvas.height * 0.2, 50, 0, Math.PI*2); ctx.fill();
-        ctx.shadowBlur = 0; // إعادة ضبط الظل
-
-        ctx.save();
-        ctx.translate(-cameraX, 0); // الكاميرا تتحرك أفقياً فقط
-
-        // رسم الطريق
-        ctx.lineWidth = 20;
-        ctx.lineJoin = 'round';
-        ctx.lineCap = 'round';
-
-        // بداية رسم الطريق من الكاميرا وحتى نهاية الشاشة
-        let startX = Math.max(0, cameraX - 100);
-        let endX = cameraX + canvas.width + 200;
-
-        // 1. رسم التراب تحت الطريق
-        ctx.beginPath();
-        ctx.moveTo(startX, canvas.height);
-        for (let x = startX; x <= endX; x += 50) {
-            ctx.lineTo(x, getTrackData(x).y);
-        }
-        ctx.lineTo(endX, canvas.height);
-        ctx.fillStyle = '#16213e'; // لون التراب الليلي
-        ctx.fill();
-
-        // 2. رسم خط الأسفلت (الطريق)
-        ctx.beginPath();
-        for (let x = startX; x <= endX; x += 20) {
-            let t = getTrackData(x);
-            if (x === startX) ctx.moveTo(x, t.y);
-            else ctx.lineTo(x, t.y);
-        }
-        ctx.strokeStyle = '#e94560'; // طريق بلون نيون
-        ctx.shadowColor = '#e94560';
-        ctx.shadowBlur = 15;
-        ctx.stroke();
-        ctx.shadowBlur = 0;
-
-        // رسم السيارة
-        drawCar(car.x, car.y - car.wheelRadius - 15, car.angle);
-
-        ctx.restore();
-
-        // 7. رسم عداد السرعة (Dashboard)
-        drawSpeedometer();
-    }
-
-    // رسم عداد السرعة على الشاشة
-    function drawSpeedometer() {
-        let speedPercent = Math.abs(car.speed) / car.maxSpeed;
-        let centerX = canvas.width - 100;
-        let centerY = 100;
-        let radius = 60;
-
-        // خلفية العداد
-        ctx.beginPath(); ctx.arc(centerX, centerY, radius, Math.PI*0.75, Math.PI*2.25);
-        ctx.lineWidth = 15; ctx.strokeStyle = 'rgba(0,0,0,0.5)'; ctx.stroke();
-
-        // مؤشر العداد المضيء
-        ctx.beginPath(); ctx.arc(centerX, centerY, radius, Math.PI*0.75, Math.PI*0.75 + (speedPercent * Math.PI*1.5));
-        ctx.strokeStyle = speedPercent > 0.8 ? '#ff0000' : '#00ffcc';
-        ctx.stroke();
-
-        // النص داخل العداد
-        ctx.fillStyle = '#fff'; ctx.font = 'bold 24px Changa'; ctx.textAlign = 'center';
-        ctx.fillText(Math.floor(Math.abs(car.speed) * 5) + ' KM', centerX, centerY + 10);
-        ctx.textAlign = 'start';
-    }
-
-    // 8. تشغيل اللعبة
+    // === حلقة التحديث المستمرة ===
     function loop() {
-        update();
-        draw();
-        requestAnimationFrame(loop);
-    }
-    
-    // الانتظار حتى تحميل الخطوط ثم بدء اللعبة
-    document.fonts.ready.then(() => { loop(); });
+        if(gameState !== 'playing') return;
+        let player = cars.find(c => c.isPlayer);
+        cars.forEach(c => c.update(getTrackY(c.x)));
+        cameraX += (player.x - canvas.width * 0.3 - cameraX) * 0.1;
 
-</script>
-</body>
-</html>
+        let sorted = [...cars].sort((a,b) => b.x - a.x);
+        document.getElementById('hud-rank').innerText = `المركز: ${sorted.findIndex(c=>c.isPlayer) + 1} / 4`;
+
+        if(player.x >= world.length && !player.finished) {
+            player.finished = true; setTimeout(showVictory, 1000);
+        }
+
+        let grad = ctx.createLinearGradient(0,0,0,canvas.height);
+        grad.addColorStop(0, world.bg1); grad.addColorStop(1, world.bg2);
+        ctx.fillStyle = grad; ctx.f
