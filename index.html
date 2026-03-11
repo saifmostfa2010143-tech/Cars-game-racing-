@@ -1,31 +1,152 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ar">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Open-World Racing Game</title>
-    <link rel="stylesheet" href="styles.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/mapbox-gl@2.4.1/dist/mapbox-gl.js"></script>
-    <script src="https://cdn.rawgit.com/ericelliott/cannon.js/master/build/cannon.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CarX Mobile Online - سيف مصطفى</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #000; font-family: sans-serif; touch-action: none; }
+        #ui-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle, #222 0%, #000 100%);
+            display: flex; justify-content: center; align-items: center; z-index: 100;
+        }
+        .btn-start {
+            background: #ff3e3e; color: white; border: none; padding: 20px 60px;
+            font-size: 1.5rem; border-radius: 50px; cursor: pointer; box-shadow: 0 0 20px #ff3e3e;
+        }
+        .controls {
+            position: absolute; bottom: 30px; width: 100%;
+            display: flex; justify-content: space-between; padding: 0 20px;
+            box-sizing: border-box; z-index: 10; pointer-events: none;
+        }
+        .control-group { display: flex; gap: 10px; pointer-events: auto; }
+        .touch-btn {
+            width: 75px; height: 75px; background: rgba(255,255,255,0.1);
+            border: 2px solid rgba(255,255,255,0.5); border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            color: white; font-size: 1.5rem; -webkit-user-select: none;
+        }
+        .touch-btn:active { background: #ff3e3e; border-color: #ff3e3e; }
+        #speed-ui {
+            position: absolute; top: 20px; width: 100%; text-align: center;
+            color: #ff3e3e; font-size: 1.8rem; font-weight: bold; font-family: monospace;
+        }
+        #loading-text { position: absolute; bottom: 20px; width: 100%; text-align: center; color: #555; font-size: 0.8rem; }
+    </style>
 </head>
 <body>
-    <header>
-        <h1>Open-World Racing Game</h1>
-        <nav>
-            <ul>
-                <li><a href="#">Home</a></li>
-                <li><a href="#">About</a></li>
-                <li><a href="#">Contact</a></li>
-            </ul>
-        </nav>
-    </header>
-    <main id="game-container">
-        <canvas id="gameCanvas"></canvas>
-    </main>
-    <footer>
-        <p>&copy; 2026 Open-World Racing Game. All rights reserved.</p>
-    </footer>
-    <script src="game.js"></script>
+
+    <div id="ui-overlay">
+        <button class="btn-start" onclick="start()">ابدأ السباق</button>
+    </div>
+
+    <div id="speed-ui">0 KM/H</div>
+    <div id="loading-text">جاري تحميل الموديل من السحابة...</div>
+
+    <div class="controls">
+        <div class="control-group">
+            <div class="touch-btn" id="btn-left">◀</div>
+            <div class="touch-btn" id="btn-right">▶</div>
+        </div>
+        <div class="control-group">
+            <div class="touch-btn" id="btn-up">▲</div>
+            <div class="touch-btn" id="btn-down">▼</div>
+        </div>
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+        let scene, camera, renderer, car;
+        let speed = 0, turn = 0;
+        const input = { up: false, down: false, left: false, right: false };
+
+        function init() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0a0a0a);
+            scene.fog = new THREE.Fog(0x0a0a0a, 20, 100);
+
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            document.body.appendChild(renderer.domElement);
+
+            const light = new THREE.HemisphereLight(0xffffff, 0x000000, 3);
+            scene.add(light);
+
+            // أرضية شبكية (Cyberpunk Style)
+            const grid = new THREE.GridHelper(1000, 100, 0xff3e3e, 0x222222);
+            scene.add(grid);
+
+            // استدعاء موديل سيارة من رابط خارجي مباشر (GitHub)
+            const loader = new GLTFLoader();
+            const carURL = 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/CesiumMilkTruck/glTF-Binary/CesiumMilkTruck.glb';
+            
+            loader.load(carURL, (gltf) => {
+                car = gltf.scene;
+                car.scale.set(1.5, 1.5, 1.5); // ضبط الحجم
+                scene.add(car);
+                document.getElementById('loading-text').innerText = "تم التحميل بنجاح!";
+            });
+
+            setupMobileControls();
+            animate();
+        }
+
+        function setupMobileControls() {
+            const bind = (id, prop) => {
+                const el = document.getElementById(id);
+                el.addEventListener('touchstart', (e) => { e.preventDefault(); input[prop] = true; });
+                el.addEventListener('touchend', (e) => { e.preventDefault(); input[prop] = false; });
+            };
+            bind('btn-up', 'up'); bind('btn-down', 'down');
+            bind('btn-left', 'left'); bind('btn-right', 'right');
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            if (car) {
+                if (input.up) speed += 0.007;
+                if (input.down) speed -= 0.007;
+                if (input.left) turn += 0.004;
+                if (input.right) turn -= 0.004;
+
+                speed *= 0.96; turn *= 0.9;
+                car.translateZ(-speed);
+                car.rotation.y += turn * (speed * 3);
+
+                const offset = new THREE.Vector3(0, 3, 8).applyQuaternion(car.quaternion);
+                camera.position.lerp(car.position.clone().add(offset), 0.1);
+                camera.lookAt(car.position);
+
+                document.getElementById('speed-ui').innerText = Math.round(Math.abs(speed * 1200)) + " KM/H";
+            }
+            renderer.render(scene, camera);
+        }
+
+        window.start = function() {
+            document.getElementById('ui-overlay').style.display = 'none';
+        }
+
+        init();
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
 </body>
 </html>
