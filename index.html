@@ -3,28 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Car X Street: Urban Racing Game</title>
+    <title>Open-World Racing Game</title>
     <link rel="stylesheet" href="styles.css">
-    <script src="game.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mapbox-gl@2.4.1/dist/mapbox-gl.js"></script>
+    <script src="https://cdn.rawgit.com/ericelliott/cannon.js/master/build/cannon.js"></script>
 </head>
 <body>
     <header>
-        <h1>Car X Street: Urban Racing</h1>
-        <div id="speedometer">Speed: 0 km/h</div>
+        <h1>Open-World Racing Game</h1>
+        <nav>
+            <ul>
+                <li><a href="#">Home</a></li>
+                <li><a href="#">About</a></li>
+                <li><a href="#">Contact</a></li>
+            </ul>
+        </nav>
     </header>
-    <main>
-        <div class="level-select">
-            <h2>Select Your Level:</h2>
-            <button onclick="startRace('City Night Streets')">City Night Streets</button>
-            <button onclick="startRace('Alley Races')">Alley Races</button>
-            <button onclick="startRace('Highway')">Highway</button>
-            <button onclick="startRace('Mountain Road')">Mountain Road</button>
-            <button onclick="startRace('Royal Battle')">Royal Battle</button>
-        </div>
-        <div id="track"></div>
+    <main id="game-container">
+        <canvas id="gameCanvas"></canvas>
     </main>
     <footer>
-        <p>Developed by Saif Mostafa</p>
+        <p>&copy; 2026 Open-World Racing Game. All rights reserved.</p>
     </footer>
+    <script src="game.js"></script>
 </body>
 </html>
