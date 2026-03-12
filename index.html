@@ -3,31 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CarX Street - Web Edition</title>
+    <title>CarX Open World - Saif</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; touch-action: none; }
+        body { margin: 0; overflow: hidden; background: #87CEEB; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; touch-action: none; }
         
-        /* --- تصميم صفحة البداية المطابق لصورتك --- */
+        /* --- واجهة البداية --- */
         #ui-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(to bottom, #111a28, #0a0f18);
+            background: linear-gradient(to bottom, rgba(17,26,40,0.9), rgba(10,15,24,0.9));
             display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100;
         }
-        .title {
-            color: #facc15; font-size: 2.5rem; font-weight: bold; text-align: center;
-            margin-bottom: 40px; text-shadow: 0 0 15px rgba(250, 204, 21, 0.4);
-        }
+        .title { color: #facc15; font-size: 3rem; font-weight: bold; text-align: center; margin-bottom: 30px; text-shadow: 0 0 15px #facc15; }
+        .subtitle { color: #fff; font-size: 1.2rem; margin-bottom: 40px; }
+        
         .btn-menu {
             width: 280px; padding: 18px; margin: 10px; border-radius: 12px; border: none;
-            font-size: 1.2rem; font-weight: bold; color: white; cursor: pointer;
-            transition: transform 0.2s, filter 0.2s;
+            font-size: 1.2rem; font-weight: bold; color: white; cursor: pointer; transition: 0.2s;
         }
         .btn-menu:active { transform: scale(0.95); }
-        
         .btn-red { background: #ef4444; box-shadow: 0 6px 0 #b91c1c; }
         .btn-blue { background: #3b82f6; box-shadow: 0 6px 0 #1d4ed8; }
         
-        /* --- أزرار التحكم والسرعة --- */
+        /* --- التحكم --- */
         .controls {
             position: absolute; bottom: 30px; width: 100%;
             display: flex; justify-content: space-between; padding: 0 20px;
@@ -35,32 +32,30 @@
         }
         .control-group { display: flex; gap: 15px; pointer-events: auto; }
         .touch-btn {
-            width: 75px; height: 75px; background: rgba(255,255,255,0.1);
-            border: 2px solid rgba(255,255,255,0.3); border-radius: 50%;
+            width: 75px; height: 75px; background: rgba(0,0,0,0.3);
+            border: 2px solid rgba(255,255,255,0.5); border-radius: 50%;
             display: flex; justify-content: center; align-items: center;
             color: white; font-size: 1.8rem; -webkit-user-select: none;
-            backdrop-filter: blur(5px);
         }
-        .touch-btn:active { background: #ef4444; border-color: #ef4444; }
+        .touch-btn:active { background: rgba(239, 68, 68, 0.8); border-color: #ef4444; }
         
         #speed-ui {
             position: absolute; top: 20px; left: 20px; color: #fff;
-            font-size: 1.8rem; font-weight: bold; font-family: monospace;
+            font-size: 2rem; font-weight: bold; font-family: monospace;
             text-shadow: 2px 2px 4px #000;
         }
-        #loading-text { color: #888; margin-top: 20px; font-size: 0.9rem; }
+        #loading-text { color: #fff; margin-top: 20px; font-size: 1.2rem; font-weight: bold; }
     </style>
 </head>
 <body>
 
     <div id="ui-overlay">
-        <div class="title">سباق الشوارع<br>🌍 CarX Web 🚗</div>
+        <div class="title">العالم المفتوح<br>🌍 GTA Vibe 🚗</div>
+        <div class="subtitle">تطوير: سيف مصطفى</div>
         
-        <button class="btn-menu btn-red" onclick="start()" id="start-btn" style="opacity: 0.5;" disabled>جاري التحميل... ⏳</button>
-        <button class="btn-menu btn-blue" onclick="alert('خاصية تعديل السيارات سيتم إضافتها قريباً!')">اختيار وتعديل السيارة 🔧</button>
-        <button class="btn-menu btn-blue" onclick="alert('قائمة الإعدادات تحت التطوير')">الإعدادات ⚙️</button>
-        
-        <div id="loading-text">جاري بناء الخريطة وتحميل السيارة...</div>
+        <button class="btn-menu btn-red" onclick="start()" id="start-btn" style="opacity: 0.5;" disabled>جاري بناء العالم... ⏳</button>
+        <button class="btn-menu btn-blue" onclick="alert('تعديل السيارات قريباً!')">الجراج 🔧</button>
+        <div id="loading-text">جاري تحميل السيارة...</div>
     </div>
 
     <div id="speed-ui">0 KM/H</div>
@@ -89,54 +84,56 @@
         import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
         let scene, camera, renderer, car;
+        let camPivot, camTarget; // أجزاء الكاميرا الاحترافية
         let speed = 0, turn = 0;
         const input = { up: false, down: false, left: false, right: false };
 
         function init() {
             scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x050510); // سماء ليلية
-            scene.fog = new THREE.FogExp2(0x050510, 0.005); // ضباب ليلي
+            // لون السماء (نهار ساطع)
+            scene.background = new THREE.Color(0x87CEEB); 
+            // لغينا الضباب الكثيف عشان الرؤية تكون واضحة جداً
 
-            camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 2000);
 
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             document.body.appendChild(renderer.domElement);
 
-            // إضاءة المدينة (Neon)
-            const ambient = new THREE.AmbientLight(0x222244, 1.5);
+            // إضاءة شمس قوية
+            const ambient = new THREE.AmbientLight(0xffffff, 0.8);
             scene.add(ambient);
-            const directional = new THREE.DirectionalLight(0x3b82f6, 2);
-            directional.position.set(100, 100, 50);
-            scene.add(directional);
+            const sun = new THREE.DirectionalLight(0xffffff, 1.5);
+            sun.position.set(100, 200, 50);
+            scene.add(sun);
 
-            // 1. أرضية الطريق
-            const floorGeo = new THREE.PlaneGeometry(2000, 2000);
-            const floorMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.5 });
-            const floor = new THREE.Mesh(floorGeo, floorMat);
-            floor.rotation.x = -Math.PI / 2;
-            scene.add(floor);
+            // --- بناء العالم المفتوح (GTA Vibe) ---
+            buildOpenWorld();
 
-            const grid = new THREE.GridHelper(2000, 100, 0x3b82f6, 0x111122);
-            grid.position.y = 0.1;
-            scene.add(grid);
-
-            // 2. بناء مدينة عشوائية (مباني على الجانبين)
-            buildCity();
-
-            // 3. تحميل السيارة
+            // --- تحميل السيارة ---
             const loader = new GLTFLoader();
             const carURL = 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/CesiumMilkTruck/glTF-Binary/CesiumMilkTruck.glb';
             
             loader.load(carURL, (gltf) => {
                 car = gltf.scene;
-                car.rotation.y = Math.PI; // تصحيح اتجاه السيارة
+                car.rotation.y = Math.PI; 
                 scene.add(car);
                 
-                // تفعيل زر البداية
+                // --- نظام كاميرا GTA الاحترافي ---
+                // 1. محور الكاميرا (ورا العربية بـ 12 وفوق بـ 4)
+                camPivot = new THREE.Object3D();
+                camPivot.position.set(0, 4, 12); 
+                car.add(camPivot); // نربطه بالعربية عشان يلف معاها
+
+                // 2. النقطة اللي الكاميرا بتبص عليها (أدام العربية)
+                camTarget = new THREE.Object3D();
+                camTarget.position.set(0, 1.5, -10);
+                car.add(camTarget);
+                
+                // تفعيل الأزرار
                 const startBtn = document.getElementById('start-btn');
-                startBtn.innerText = "بدء السباق 🏁";
+                startBtn.innerText = "بدء اللعب 🏁";
                 startBtn.style.opacity = "1";
                 startBtn.disabled = false;
                 document.getElementById('loading-text').style.display = 'none';
@@ -146,26 +143,48 @@
             animate();
         }
 
-        // دالة لبناء مباني عشوائية حول الطريق
-        function buildCity() {
+        // دالة بناء الخريطة الحقيقية
+        function buildOpenWorld() {
+            // 1. أرضية عشب أخضر عملاقة
+            const grassGeo = new THREE.PlaneGeometry(3000, 3000);
+            const grassMat = new THREE.MeshStandardMaterial({ color: 0x4ade80, roughness: 1 });
+            const grass = new THREE.Mesh(grassGeo, grassMat);
+            grass.rotation.x = -Math.PI / 2;
+            scene.add(grass);
+
+            // 2. الشارع الرئيسي (أسفلت رمادي)
+            const roadGeo = new THREE.PlaneGeometry(30, 3000);
+            const roadMat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.8 });
+            const mainRoad = new THREE.Mesh(roadGeo, roadMat);
+            mainRoad.rotation.x = -Math.PI / 2;
+            mainRoad.position.y = 0.1; // أعلى من العشب بشعرة
+            scene.add(mainRoad);
+
+            // 3. بناء مباني ملونة ومختلفة على جانبي الطريق
+            const colors = [0xffffff, 0xe2e8f0, 0xfca5a5, 0x93c5fd, 0xfef08a]; // أبيض، رمادي، أحمر فاتح، أزرق، أصفر
             const boxGeo = new THREE.BoxGeometry(1, 1, 1);
-            const boxMat = new THREE.MeshStandardMaterial({ color: 0x1a1a2e, roughness: 0.3 });
-            const instancedMesh = new THREE.InstancedMesh(boxGeo, boxMat, 300);
             
-            const dummy = new THREE.Object3D();
-            for(let i = 0; i < 300; i++) {
-                // وضع المباني بعيداً عن منتصف الطريق
-                const side = Math.random() > 0.5 ? 1 : -1;
-                const x = side * (Math.random() * 200 + 20); 
-                const z = (Math.random() - 0.5) * 1500;
-                const height = Math.random() * 40 + 10;
-                
-                dummy.position.set(x, height / 2, z);
-                dummy.scale.set(15 + Math.random()*10, height, 15 + Math.random()*10);
-                dummy.updateMatrix();
-                instancedMesh.setMatrixAt(i, dummy.matrix);
+            for(let i = -1000; i < 1000; i += 60) {
+                // الجانب الأيمن
+                if(Math.random() > 0.3) createBuilding(boxGeo, colors, 25 + Math.random() * 20, i);
+                // الجانب الأيسر
+                if(Math.random() > 0.3) createBuilding(boxGeo, colors, -25 - Math.random() * 20, i);
             }
-            scene.add(instancedMesh);
+        }
+
+        function createBuilding(geo, colors, x, z) {
+            const mat = new THREE.MeshStandardMaterial({ 
+                color: colors[Math.floor(Math.random() * colors.length)],
+                roughness: 0.7
+            });
+            const building = new THREE.Mesh(geo, mat);
+            const width = 15 + Math.random() * 15;
+            const depth = 15 + Math.random() * 15;
+            const height = 10 + Math.random() * 50; // مباني قصيرة وطويلة
+            
+            building.position.set(x, height / 2, z);
+            building.scale.set(width, height, depth);
+            scene.add(building);
         }
 
         function setupMobileControls() {
@@ -180,31 +199,31 @@
 
         function animate() {
             requestAnimationFrame(animate);
-            if (car) {
-                // فيزياء الحركة
-                if (input.up) speed += 0.005;
-                if (input.down) speed -= 0.005;
+            if (car && camPivot && camTarget) {
+                // فيزياء السيارة
+                if (input.up) speed += 0.006;
+                if (input.down) speed -= 0.006;
                 if (input.left) turn += 0.004;
                 if (input.right) turn -= 0.004;
 
-                speed *= 0.98; // الاحتكاك
-                turn *= 0.92;  // استعدال العجلات
+                speed *= 0.98; // فرملة طبيعية
+                turn *= 0.92;
 
                 car.translateZ(-speed);
                 car.rotation.y += turn * (speed * 3.5);
 
-                // --- إصلاح الكاميرا الدقيق ---
-                // 1. تحديد مكان الكاميرا (خلف السيارة بمسافة 12 وأعلى بمسافة 5)
-                const offset = new THREE.Vector3(0, 5, 12);
-                const idealPosition = offset.applyQuaternion(car.quaternion).add(car.position);
+                // --- سحر الكاميرا (GTA Style) ---
+                // نجيب المكان الحقيقي للمحور اللي ورا العربية في العالم
+                const targetPos = new THREE.Vector3();
+                camPivot.getWorldPosition(targetPos);
                 
-                // 2. تحديد النقطة التي تنظر إليها الكاميرا (أمام السيارة)
-                const lookAtTarget = new THREE.Vector3(0, 1, -10);
-                const idealLookAt = lookAtTarget.applyQuaternion(car.quaternion).add(car.position);
+                // نخلي الكاميرا تروح للمكان ده بنعومة (0.1)
+                camera.position.lerp(targetPos, 0.1);
 
-                // 3. تحريك الكاميرا بسلاسة (Lerp)
-                camera.position.lerp(idealPosition, 0.1);
-                camera.lookAt(idealLookAt);
+                // نجيب المكان اللي الكاميرا المفروض تبص عليه (أدام العربية)
+                const lookPos = new THREE.Vector3();
+                camTarget.getWorldPosition(lookPos);
+                camera.lookAt(lookPos);
 
                 document.getElementById('speed-ui').innerText = Math.round(Math.abs(speed * 1500)) + " KM/H";
             }
