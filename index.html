@@ -3,47 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>World Racing - Saif Edition</title>
+    <title>Saif Racing Pro</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #87CEEB; touch-action: none; font-family: sans-serif; }
+        body { margin: 0; overflow: hidden; background: #000; touch-action: none; font-family: sans-serif; }
         
         /* واجهة البداية */
         #ui-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(15, 23, 42, 0.9); display: flex; flex-direction: column;
-            justify-content: center; align-items: center; z-index: 100;
+            background: radial-gradient(circle, #1e293b, #000); 
+            display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100;
         }
-        .title { color: #facc15; font-size: 2.5rem; text-align: center; margin-bottom: 30px; }
-        .btn-play { padding: 15px 60px; font-size: 1.5rem; background: #ef4444; color: white; border: none; border-radius: 50px; cursor: pointer; box-shadow: 0 6px 0 #991b1b; }
+        .title { color: #facc15; font-size: 2rem; margin-bottom: 20px; text-shadow: 0 0 10px #facc15; }
+        .loading-text { color: white; margin-bottom: 10px; font-size: 0.9rem; }
+        .btn-play { padding: 15px 60px; font-size: 1.5rem; background: #ef4444; color: white; border: none; border-radius: 50px; cursor: pointer; }
 
-        /* التحكم: الدركسيون شمال والبنزين يمين */
+        /* التحكم: الدركسيون شمال (يمين/يسار) والبنزين يمين (فوق/تحت) */
         .controls {
-            position: absolute; bottom: 40px; width: 100%;
-            display: flex; justify-content: space-between; padding: 0 40px;
+            position: absolute; bottom: 30px; width: 100%;
+            display: flex; justify-content: space-between; padding: 0 20px;
             box-sizing: border-box; z-index: 10; pointer-events: none;
         }
-        .control-group { display: flex; gap: 20px; pointer-events: auto; }
+        .control-group { display: flex; gap: 10px; pointer-events: auto; }
         .touch-btn {
-            width: 85px; height: 85px; background: rgba(255, 255, 255, 0.1);
-            border: 2px solid rgba(255, 255, 255, 0.4); border-radius: 50%;
+            width: 75px; height: 75px; background: rgba(255,255,255,0.2);
+            border: 2px solid white; border-radius: 50%;
             display: flex; justify-content: center; align-items: center;
-            color: white; font-size: 2rem; backdrop-filter: blur(5px);
+            color: white; font-size: 1.5rem; user-select: none;
         }
 
-        #speed-ui {
-            position: absolute; top: 20px; right: 20px; background: rgba(0,0,0,0.6);
-            padding: 10px 20px; border-radius: 15px; color: #facc15; font-size: 1.5rem;
+        #speed-card {
+            position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.7); color: #facc15; padding: 5px 20px;
+            border-radius: 20px; font-size: 1.5rem; font-weight: bold;
         }
     </style>
 </head>
 <body>
 
     <div id="ui-overlay">
-        <div class="title">سباق العوالم 🏎️<br>Saif Mostafa</div>
-        <button class="btn-play" onclick="startApp()">ابدأ السباق</button>
+        <div class="title">عالم سيف المفتوح 🏎️</div>
+        <div id="status" class="loading-text">جاري تجهيز المدينة...</div>
+        <button class="btn-play" onclick="startApp()">ابدأ الآن</button>
     </div>
 
-    <div id="speed-ui"><span id="speed-val">0</span> KM/H</div>
+    <div id="speed-card"><span id="speed-val">0</span> KM/H</div>
 
     <div class="controls">
         <div class="control-group">
@@ -69,7 +72,7 @@
         import * as THREE from 'three';
         import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-        let scene, camera, renderer, car;
+        let scene, camera, renderer, car, city;
         let speed = 0, turn = 0;
         const input = { up: false, down: false, left: false, right: false };
 
@@ -77,8 +80,10 @@
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0x87CEEB);
 
-            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 5000);
-            
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+            // مكان مبدئي للكاميرا قبل ما العربية تحمل
+            camera.position.set(0, 5, 15);
+
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(window.devicePixelRatio);
@@ -86,30 +91,40 @@
 
             scene.add(new THREE.AmbientLight(0xffffff, 1.5));
             const sun = new THREE.DirectionalLight(0xffffff, 1);
-            sun.position.set(100, 200, 100);
+            sun.position.set(50, 100, 50);
             scene.add(sun);
+
+            // أرضية مؤقتة عشان متشوفش فراغ لو المدينة اتأخرت
+            const floor = new THREE.Mesh(
+                new THREE.PlaneGeometry(1000, 1000),
+                new THREE.MeshStandardMaterial({ color: 0x333333 })
+            );
+            floor.rotation.x = -Math.PI / 2;
+            scene.add(floor);
 
             const loader = new GLTFLoader();
 
-            // تحميل المدينة الحقيقية (رابط مباشر جاهز)
+            // 1. تحميل المدينة (رابط مباشر لمدينة خفيفة)
             loader.load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/models/gltf/LittlestTokyo.glb', (gltf) => {
-                const city = gltf.scene;
-                city.scale.set(0.1, 0.1, 0.1); 
-                city.position.y = -2;
+                city = gltf.scene;
+                city.scale.set(0.1, 0.1, 0.1);
+                city.position.set(0, 1, 0); 
                 scene.add(city);
+                document.getElementById('status').innerText = "تم تحميل المدينة بنجاح ✅";
             });
 
-            // تحميل السيارة
+            // 2. تحميل السيارة
             loader.load('https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/CesiumMilkTruck/glTF-Binary/CesiumMilkTruck.glb', (gltf) => {
                 car = gltf.scene;
                 scene.add(car);
+                car.position.set(0, 1.2, 0);
             });
 
-            setupControls();
+            setupTouch();
             animate();
         }
 
-        function setupControls() {
+        function setupTouch() {
             const bind = (id, prop) => {
                 const el = document.getElementById(id);
                 el.addEventListener('touchstart', (e) => { e.preventDefault(); input[prop] = true; });
@@ -122,6 +137,7 @@
         function animate() {
             requestAnimationFrame(animate);
             if (car) {
+                // ميكانيكا العربية
                 if (input.up) speed += 0.01;
                 if (input.down) speed -= 0.01;
                 if (input.left) turn += 0.005;
@@ -131,15 +147,16 @@
                 car.translateZ(-speed);
                 car.rotation.y += turn * (speed * 4);
 
-                // --- الكاميرا الحديدية الملحومة خلف السيارة ---
-                const relativeOffset = new THREE.Vector3(0, 5, 12);
-                const actualOffset = relativeOffset.applyMatrix4(car.matrixWorld);
-                camera.position.copy(actualOffset);
+                // --- إصلاح الكاميرا: جعلها تتبع ظهر العربية تماماً ---
+                const offset = new THREE.Vector3(0, 5, 12); // الارتفاع والبعد
+                const actualOffset = offset.applyMatrix4(car.matrixWorld);
+                camera.position.lerp(actualOffset, 0.1); // حركة ناعمة للكاميرا
                 
-                const targetPoint = new THREE.Vector3(0, 2, -10).applyMatrix4(car.matrixWorld);
-                camera.lookAt(targetPoint);
+                // الكاميرا تبص على نقطة أمام العربية
+                const lookAtPos = new THREE.Vector3(0, 2, -10).applyMatrix4(car.matrixWorld);
+                camera.lookAt(lookAtPos);
 
-                document.getElementById('speed-val').innerText = Math.round(Math.abs(speed * 1500));
+                document.getElementById('speed-val').innerText = Math.round(Math.abs(speed * 1200));
             }
             renderer.render(scene, camera);
         }
@@ -154,5 +171,4 @@
         });
     </script>
 </body>
-    </html>
-    
+</html>
